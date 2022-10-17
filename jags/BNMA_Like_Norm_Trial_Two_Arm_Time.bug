@@ -1,0 +1,28 @@
+model {
+
+for(i in 1:I){                                    
+  prec[i] <- pow(se[i],-2)
+  y[i] ~ dnorm(mu[i], prec[i])
+  mu[i] = delta[i] + beta[i]*years[i]
+  
+  delta[i] ~ dnorm(md[i],tau)                         
+  md[i] = d[t2[i]] - d[t1[i]]    
+  
+  beta[i] = b[t2[i]] - b[t1[i]]
+}
+
+d[1] <- 0                                           
+for(k in 2:K){                                      
+  d[k] ~ dnorm(0,0.0001)                            
+}
+
+b[1] = 0
+for(k in 2:K){
+  b[k] ~ dt(0,1/25,1)
+}
+
+sd ~ dunif(0,5)                                    
+tau <- pow(sd,-2)                                   
+   
+  
+}

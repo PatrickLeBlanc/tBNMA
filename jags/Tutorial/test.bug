@@ -1,0 +1,13 @@
+model {
+
+for(i in 1:N){
+  y[i] ~ dnorm(mu[i], tau)
+  mu[i] <- alpha + beta1 * x1[i] + beta2 * x2[i]
+}
+   
+  alpha ~ dnorm(0, .01)
+  beta1 ~ dunif(-100, 100)
+  beta2 ~ dunif(-100, 100)
+  tau ~ dgamma(.01, .01)
+  
+}
