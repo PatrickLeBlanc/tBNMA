@@ -233,7 +233,7 @@ jags_file = "C:/Users/psmit/Desktop/Research/tBNMA/jags/BNMA_Like_Bin_Trial_Two_
 jags_fit_sig <- R2jags::jags(data = jags_data,
                              inits = jags_inits,
                              parameters.to.save = jags_params,
-                             n.chains = 3, n.iter = 10000,n.burnin = 9000,
+                             n.chains = 3, n.iter = 20000,n.burnin = 10000,
                              model.file =  jags_file
 )
 
@@ -263,7 +263,7 @@ find_quant = function(x){
   return(quantile(x,c(0.025,0.975)))
 }
 
-for(k in 2:K){
+for(k in c(2,3,7,8,9,10)){
   pred_x = 0:(10*T)/10
   
   
@@ -284,7 +284,7 @@ for(k in 2:K){
   plot_pred_mu = c(plot_pred_mu,pred_mu)
   plot_pred_low = c(plot_pred_low,quant_mat[1,])
   plot_pred_high = c(plot_pred_high,quant_mat[2,])
-  plot_k = c(plot_k,rep(treatments[k],length(pred_x)))
+  plot_k = c(plot_k,rep(treatment_map$Treatment[k],length(pred_x)))
 }
 
 df = data.frame("Years" = plot_years,
@@ -295,12 +295,12 @@ df = data.frame("Years" = plot_years,
 
 ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
   geom_line()
-# 
-# ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
-#   geom_line() +
-#   facet_grid(~K) +
-#   geom_ribbon(aes(ymin = Low, ymax = High),
-#               alpha = 0.2, fill = "deepskyblue4")
+
+ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
+  geom_line() +
+  facet_wrap(~K) +
+  geom_ribbon(aes(ymin = Low, ymax = High),
+              alpha = 0.2, fill = "deepskyblue4")
 
 #calculate sucra
 

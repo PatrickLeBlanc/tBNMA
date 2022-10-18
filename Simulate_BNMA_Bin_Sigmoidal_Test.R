@@ -4,7 +4,7 @@ library(R2jags)
 set.seed(1234)
 
 #set parameters
-I = 150
+I = 140
 K = 5
 T = 14
 
@@ -97,9 +97,12 @@ for(k in 2:K){
 
 #for k = 3, implement sigmoidal function with mean 0
 k = 2
-height = rgamma(1,1,1)
-scale = rgamma(1,1,1)
-center = runif(1,0,T)
+# height = rgamma(1,1,1)
+# scale = rgamma(1,1,1)
+# center = runif(1,0,T)
+height = 2
+scale = 1/3
+center = T/2
 for(t in 1:tsize[k]){
   d_kt[k,t] = d[k] - height +  2*height/(1+exp(-scale*(short_year_ki[k,t] - center)))
 }
@@ -136,106 +139,106 @@ for(i in 1:I){
   }
   
 }
-
-##################
-# BNMA Sigmoidal #
-##################
-# given d_kt
-
-pi = 0.5
-m_mu = 0
-prec_mu = 1
-
-jags_data <- list("I","n_ik","y_ik",
-                  "m_mu","prec_mu",
-                  "t2","t1","K",
-                  "short_year_ki",
-                  "tsize","TS",
-                  "lts_ind", "T",
-                  "pi", "d_kt")
-
-#note which params to save
-jags_params <- c("z_k","d",
-                 "min_k", "height_k",
-                 "scale_k", "center_k",
-                 "psi")
-
-#define inititailization values
-jags_inits <- function(){
-  list("sd" = runif(1,0,5)
-  )
-}
-
-jags_file = "C:/Users/psmit/Desktop/Research/tBNMA/jags/BNMA_Like_Bin_Trial_Two_Arm_Time_Sigmoidal_given_dkt.bug"
-
-#fit model
-
-jags_fit_sig <- R2jags::jags(data = jags_data, 
-                             inits = jags_inits,
-                             parameters.to.save = jags_params,
-                             n.chains = 3, n.iter = 9000,n.burnin = 1000,
-                             model.file =  jags_file
-)
-
-print(jags_fit_sig)
-
-post_d = jags_fit_sig$BUGSoutput$sims.list$d
-apply(post_d,2,mean)
-
-post_z = jags_fit_sig$BUGSoutput$sims.list$z_k
-apply(post_z,2,mean)
-
-post_height = jags_fit_sig$BUGSoutput$sims.list$height_k
-post_scale = jags_fit_sig$BUGSoutput$sims.list$scale_k
-post_center = jags_fit_sig$BUGSoutput$sims.list$center_k
-
-post_psi = jags_fit_sig$BUGSoutput$sims.list$psi
-
-N = length(post_psi)
-
-plot_years = NULL
-plot_pred_mu = NULL
-plot_pred_low = NULL
-plot_pred_high = NULL
-plot_k = NULL
-
-find_quant = function(x){
-  return(quantile(x,c(0.025,0.975)))
-}
-
-for(k in 2:K){
-  pred_x = 0:(10*T)/10
-  
-  
-  pred_mu_mat = matrix(0,nrow = N, ncol = length(pred_x))
-  for(n in 1:N){
-    pred_mu_mat[n,] = post_z[n,k]*((post_d[n,k] - post_height[n,k]) +  2*( post_height[n,k])/(1+exp(-post_scale[n,k]*(pred_x - post_center[n,k])))) + (1-post_z[n,k])*rep(post_d[n,k],length(pred_x))
-  }
-  # pred_mu =   post_min[k] +  post_height[k]/(1+exp(-post_scale[k]*(pred_x - post_center[k])))
-  pred_mu =   apply(pred_mu_mat,2,mean)
-  quant_mat = apply(pred_mu_mat,2,find_quant)
-  
-  
-  # 
-  #   pred_low = pred_mu - 1.95 * sqrt(diag(pred_Sigma))
-  #   pred_high = pred_mu + 1.95 * sqrt(diag(pred_Sigma))
-  
-  plot_years = c(plot_years,pred_x)
-  plot_pred_mu = c(plot_pred_mu,pred_mu)
-  plot_pred_low = c(plot_pred_low,quant_mat[1,])
-  plot_pred_high = c(plot_pred_high,quant_mat[2,])
-  plot_k = c(plot_k,rep(treatments[k],length(pred_x)))
-}
-
-df = data.frame("Years" = plot_years,
-                "Mean" = plot_pred_mu,
-                "Low" = plot_pred_low,
-                "High" = plot_pred_high,
-                "K" = as.factor(plot_k))
-
-ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
-  geom_line()
-
+# 
+# ##################
+# # BNMA Sigmoidal #
+# ##################
+# # given d_kt
+# 
+# pi = 0.5
+# m_mu = 0
+# prec_mu = 1
+# 
+# jags_data <- list("I","n_ik","y_ik",
+#                   "m_mu","prec_mu",
+#                   "t2","t1","K",
+#                   "short_year_ki",
+#                   "tsize","TS",
+#                   "lts_ind", "T",
+#                   "pi", "d_kt")
+# 
+# #note which params to save
+# jags_params <- c("z_k","d",
+#                  "min_k", "height_k",
+#                  "scale_k", "center_k",
+#                  "psi")
+# 
+# #define inititailization values
+# jags_inits <- function(){
+#   list("sd" = runif(1,0,5)
+#   )
+# }
+# 
+# jags_file = "C:/Users/psmit/Desktop/Research/tBNMA/jags/BNMA_Like_Bin_Trial_Two_Arm_Time_Sigmoidal_given_dkt.bug"
+# 
+# #fit model
+# 
+# jags_fit_sig <- R2jags::jags(data = jags_data, 
+#                              inits = jags_inits,
+#                              parameters.to.save = jags_params,
+#                              n.chains = 3, n.iter = 9000,n.burnin = 1000,
+#                              model.file =  jags_file
+# )
+# 
+# print(jags_fit_sig)
+# 
+# post_d = jags_fit_sig$BUGSoutput$sims.list$d
+# apply(post_d,2,mean)
+# 
+# post_z = jags_fit_sig$BUGSoutput$sims.list$z_k
+# apply(post_z,2,mean)
+# 
+# post_height = jags_fit_sig$BUGSoutput$sims.list$height_k
+# post_scale = jags_fit_sig$BUGSoutput$sims.list$scale_k
+# post_center = jags_fit_sig$BUGSoutput$sims.list$center_k
+# 
+# post_psi = jags_fit_sig$BUGSoutput$sims.list$psi
+# 
+# N = length(post_psi)
+# 
+# plot_years = NULL
+# plot_pred_mu = NULL
+# plot_pred_low = NULL
+# plot_pred_high = NULL
+# plot_k = NULL
+# 
+# find_quant = function(x){
+#   return(quantile(x,c(0.025,0.975)))
+# }
+# 
+# for(k in 2:K){
+#   pred_x = 0:(10*T)/10
+#   
+#   
+#   pred_mu_mat = matrix(0,nrow = N, ncol = length(pred_x))
+#   for(n in 1:N){
+#     pred_mu_mat[n,] = post_z[n,k]*((post_d[n,k] - post_height[n,k]) +  2*( post_height[n,k])/(1+exp(-post_scale[n,k]*(pred_x - post_center[n,k])))) + (1-post_z[n,k])*rep(post_d[n,k],length(pred_x))
+#   }
+#   # pred_mu =   post_min[k] +  post_height[k]/(1+exp(-post_scale[k]*(pred_x - post_center[k])))
+#   pred_mu =   apply(pred_mu_mat,2,mean)
+#   quant_mat = apply(pred_mu_mat,2,find_quant)
+#   
+#   
+#   # 
+#   #   pred_low = pred_mu - 1.95 * sqrt(diag(pred_Sigma))
+#   #   pred_high = pred_mu + 1.95 * sqrt(diag(pred_Sigma))
+#   
+#   plot_years = c(plot_years,pred_x)
+#   plot_pred_mu = c(plot_pred_mu,pred_mu)
+#   plot_pred_low = c(plot_pred_low,quant_mat[1,])
+#   plot_pred_high = c(plot_pred_high,quant_mat[2,])
+#   plot_k = c(plot_k,rep(treatments[k],length(pred_x)))
+# }
+# 
+# df = data.frame("Years" = plot_years,
+#                 "Mean" = plot_pred_mu,
+#                 "Low" = plot_pred_low,
+#                 "High" = plot_pred_high,
+#                 "K" = as.factor(plot_k))
+# 
+# ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
+#   geom_line()
+# 
 
 ##################
 # BNMA Sigmoidal #

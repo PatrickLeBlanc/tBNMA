@@ -95,14 +95,25 @@ for(k in 2:K){
   }
 }
 
+# #for k = 2, implement sigmoidal function with mean 0
+# k = 2
+# # height = rgamma(1,1,1)
+# # scale = rgamma(1,1,1)
+# # center = runif(1,0,T)
+# height = 2
+# scale = 1/3
+# center = T/2
+# for(t in 1:tsize[k]){
+#   d_kt[k,t] = d[k] - height +  2*height/(1+exp(-scale*(short_year_ki[k,t] - center)))
+# }
 #for k = 3, implement sigmoidal function with mean 0
 k = 3
-height = rgamma(1,1,1)
-scale = rgamma(1,1,1)
-center = runif(1,0,T)
+amp = d[k]
 for(t in 1:tsize[k]){
-  d_kt[k,t] = d[k] - height +  2*height/(1+exp(-scale*(short_year_ki[k,t] - center)))
+  time = short_year_ki[k,t]
+  d_kt[k,t] = -abs(amp) +  2*abs(amp)/(1+exp(-1/3*(time - T/2)))
 }
+d[k] = mean(d_kt[k,1:tsize[k]])
 plot(short_year_ki[k,1:tsize[k]],d_kt[k,1:tsize[k]])
 
 #simulate delta for each study
@@ -158,7 +169,7 @@ jags_inits <- function(){
   )
 }
 
-jags_file = "C:/Users/psmit/Desktop/Research/tBNMA/jags/BNMA_Like_Bin_Trial_Two_Arm.bug"
+jags_file = "/jags/BNMA_Like_Bin_Trial_Two_Arm.bug"
 
 #fit model
 
@@ -234,14 +245,14 @@ jags_inits <- function(){
   )
 }
 
-jags_file = "C:/Users/psmit/Desktop/Research/tBNMA/jags/BNMA_Like_Bin_Trial_Two_Arm_Time_Sigmoidal_v3.bug"
+jags_file = "/jags/BNMA_Like_Bin_Trial_Two_Arm_Time_Sigmoidal_v2.bug"
 
 #fit model
 
 jags_fit_sig <- R2jags::jags(data = jags_data, 
                              inits = jags_inits,
                              parameters.to.save = jags_params,
-                             n.chains = 3, n.iter = 20000,n.burnin = 10000,
+                             n.chains = 3, n.iter = 9000,n.burnin = 1000,
                              model.file =  jags_file
 )
 
@@ -382,7 +393,7 @@ bnma_sig_sucra = bnma_sig_sucra/(K-1)
 #   )
 # }
 # 
-# jags_file = "C:/Users/psmit/Desktop/Research/tBNMA/jags/BNMA_Like_Bin_Trial_Two_Arm_Time.bug"
+# jags_file = "/jags/BNMA_Like_Bin_Trial_Two_Arm_Time.bug"
 # 
 # #fit model
 # set.seed(123)
@@ -460,7 +471,7 @@ bnma_sig_sucra = bnma_sig_sucra/(K-1)
 #   )
 # }
 # 
-# jags_file = "C:/Users/psmit/Desktop/Research/tBNMA/jags/BNMA_Like_Bin_Trial_Two_Arm_Time_GP.bug"
+# jags_file = "/jags/BNMA_Like_Bin_Trial_Two_Arm_Time_GP.bug"
 # 
 # #fit model
 # jags_fit_time <- R2jags::jags(data = jags_data,

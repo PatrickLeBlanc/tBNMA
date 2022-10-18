@@ -21,10 +21,9 @@ model {
   }
   
   z_k[1] = 0
-  z_k[2] = 1
-  z_k[3] = 0
-  z_k[4] = 0
-  z_k[5] = 0
+  for(k in 2:K){
+    z_k[k] ~ dbern(pi)
+  }
   
   d[1] <- 0                                           
   for(k in 2:K){                                      
