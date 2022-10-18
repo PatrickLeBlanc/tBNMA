@@ -2,8 +2,6 @@ library(igraph)
 library(ggplot2)
 library(R2jags)
 
-setwd("C:/Users/psmit/Desktop/Research/NMA")
-
 dat = read.csv("Data/data_zhangetal2019.csv")
 
 # #lets get cheeky?
@@ -165,7 +163,7 @@ jags_inits <- function(){
   )
 }
 
-jags_file = "C:/Users/psmit/Desktop/Research/NMA/jags/BNMA_Like_Bin_Trial_Two_Arm.bug"
+jags_file = "C:/Users/psmit/Desktop/Research/tBNMA/jags/BNMA_Like_Bin_Trial_Two_Arm.bug"
 
 #fit model
 
@@ -228,19 +226,18 @@ jags_inits <- function(){
   )
 }
 
-jags_file = "C:/Users/psmit/Desktop/Research/NMA/jags/BNMA_Like_Bin_Trial_Two_Arm_Time_Sigmoidal_v2.bug"
+jags_file = "C:/Users/psmit/Desktop/Research/tBNMA/jags/BNMA_Like_Bin_Trial_Two_Arm_Time_Sigmoidal_v2.bug"
 
 #fit model
 
 jags_fit_sig <- R2jags::jags(data = jags_data,
                              inits = jags_inits,
                              parameters.to.save = jags_params,
-                             n.chains = 3, n.iter = 9000,n.burnin = 1000,
+                             n.chains = 3, n.iter = 10000,n.burnin = 9000,
                              model.file =  jags_file
 )
 
 print(jags_fit_sig)
-
 
 post_d = jags_fit_sig$BUGSoutput$sims.list$d
 apply(post_d,2,mean)
@@ -370,7 +367,7 @@ jags_inits <- function(){
   )
 }
 
-jags_file = "C:/Users/psmit/Desktop/Research/NMA/jags/BNMA_Like_Bin_Trial_Two_Arm_Time.bug"
+jags_file = "C:/Users/psmit/Desktop/Research/tBNMA/jags/BNMA_Like_Bin_Trial_Two_Arm_Time.bug"
 
 #fit model
 set.seed(123)
@@ -441,7 +438,7 @@ jags_inits <- function(){
   )
 }
 
-jags_file = "C:/Users/psmit/Desktop/Research/NMA/jags/BNMA_Like_Bin_Trial_Two_Arm_Time_GP.bug"
+jags_file = "C:/Users/psmit/Desktop/Research/tBNMA/jags/BNMA_Like_Bin_Trial_Two_Arm_Time_GP.bug"
 
 #fit model
 jags_fit_time <- R2jags::jags(data = jags_data,

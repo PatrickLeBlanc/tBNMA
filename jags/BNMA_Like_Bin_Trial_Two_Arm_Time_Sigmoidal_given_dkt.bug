@@ -1,0 +1,41 @@
+model {
+
+for(n in 1:tsize[2]){
+mean_kt[2,n] = (d[2] - height_k[2]) +  2*(height_k[2])/(1+exp(-scale_k[2]*(short_year_ki[2,n] - center_k[2])))
+      d_kt[2,n] ~ dnorm(mean_kt[2,n], prec_psi)
+}
+  
+
+  for(k in 3:K){
+    for(n in 1:tsize[k]){
+      d_kt[k,n] ~ dnorm(d[k],prec_psi)
+    }
+  }
+  
+  z_k[1] = 0
+  z_k[2] = 1
+  z_k[3] = 0
+  z_k[4] = 0
+  z_k[5] = 0
+  
+  d[1] <- 0                                           
+  for(k in 2:K){                                      
+    d[k] ~ dnorm(0,0.0001)                            
+  }
+  
+  height_k[1] = 0
+  scale_k[1] = 0
+  center_k[1] = 0
+  for(k in 2:K){
+    height_k[k] ~ dgamma(1,1)
+    scale_k[k] ~ dgamma(1,1)
+    center_k[k] ~ dunif(0,T)
+  }
+  
+  sd ~ dunif(0,5)                                    
+  tau <- pow(sd,-2)                                   
+  psi ~ dunif(0,5)
+  prec_psi = pow(psi,-2)
+  
+  pi ~ dbeta(1,1)
+}

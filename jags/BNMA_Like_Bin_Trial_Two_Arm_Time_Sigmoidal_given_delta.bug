@@ -1,15 +1,6 @@
 model {
   
   for(i in 1:I){         
-  
-    for(k in 1:2){
-      y_ik[i,k] ~ dbin(p_ik[i,k],n_ik[i,k])
-      p_ik[i,k] = exp(mu[i]+delta[i,k])/(1 + exp(mu[i] + delta[i,k]))
-    }
-  
-    mu[i] ~ dnorm(m_mu,prec_mu)
-  
-    delta[i,1] = 0
     delta[i,2] ~ dnorm(md[i],tau)                         
     md[i] = d_kt[t2[i],lts_ind[t2[i],i]] - d_kt[t1[i],lts_ind[t1[i],i]]                      
   }
@@ -30,9 +21,10 @@ model {
   }
   
   z_k[1] = 0
-  for(k in 2:K){
-    z_k[k] ~ dbern(pi)
-  }
+  z_k[2] = 1
+  z_k[3] = 0
+  z_k[4] = 0
+  z_k[5] = 0
   
   d[1] <- 0                                           
   for(k in 2:K){                                      
