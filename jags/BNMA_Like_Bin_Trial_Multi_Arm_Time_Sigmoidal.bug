@@ -52,7 +52,7 @@ model {
   scale_k[1] = 0
   center_k[1] = 0
   for(k in 2:K){
-    height_k[k] ~ dgamma(1,1)
+    height_k[k] ~ dnorm(0,1)
     scale_k[k] ~ dgamma(1,1)
     center_k[k] ~ dunif(0,T)
   }

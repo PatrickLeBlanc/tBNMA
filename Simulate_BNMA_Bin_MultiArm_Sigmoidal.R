@@ -108,7 +108,7 @@ k = 2
 # height = rgamma(1,1,1)
 # scale = rgamma(1,1,1)
 # center = runif(1,0,T)
-height = -2
+height = 2
 scale = 1/3
 center = T/2
 for(t in 1:tsize[k]){
