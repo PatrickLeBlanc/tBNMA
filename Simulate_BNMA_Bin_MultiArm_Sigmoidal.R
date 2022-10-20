@@ -108,7 +108,7 @@ k = 2
 # height = rgamma(1,1,1)
 # scale = rgamma(1,1,1)
 # center = runif(1,0,T)
-height = 2
+height = -2
 scale = 1/3
 center = T/2
 for(t in 1:tsize[k]){
@@ -468,235 +468,235 @@ for(k in 1:K){
   }
 }
 bnma_sig_sucra = bnma_sig_sucra/(K-1)
-
-###########
-# GP BNMA #
-###########
-
-m_mu = 0
-prec_mu = 1
-
-#JAGS Now
-
-#save data for jags
-jags_data <- list("I", "n_ik","y_ik",
-                  "num_treat","t_mat",
-                  "m_mu","prec_mu",
-                  "K",
-                  "short_year_ki",
-                  "tsize","TS",
-                  "lts_ind")
-
-#note which params to save
-jags_params <- c("d","d_kt","sd",
-                 "phi","rho","psi",
-                 "delta")
-
-#define inititailization values
-jags_inits <- function(){
-  list("sd" = runif(1,0,5)
-  )
-}
-
-dir = getwd()
-jags_file = paste0(dir,"/jags/BNMA_Like_Bin_Trial_Multi_Arm_Time_GP.bug")
-
-#fit model
-jags_fit_time <- R2jags::jags(data = jags_data,
-                              inits = jags_inits,
-                              parameters.to.save = jags_params,
-                              n.chains = 3, n.iter = 9000,n.burnin = 1000,
-                              model.file =  jags_file
-)
-
-print(jags_fit_time)
-
-jags_fit_time$BUGSoutput$summary[1:5,c(1,3,7)]
-
-post_d_time = jags_fit_time$BUGSoutput$mean$d
-plot(d,post_d_time, xlab = "True d_{1k}", ylab = "Posterior Mean d_{1k}", main = "GP-BNMA")
-lines(-5:5,-5:5)
-
-post_delta_time = jags_fit_time$BUGSoutput$mean$delta
-plot(delta,post_delta_time)
-lines(-5:5,-5:5)
-
-d_kt_post = jags_fit_time$BUGSoutput$mean$d_kt
-
-d_kt_list = NULL
-years_kt = NULL
-for(k in 1:K){
-  print(mean(d_kt_post[k,1:tsize[k]]))
-  d_kt_list[[k]] = d_kt_post[k,1:tsize[k]]
-  years_kt[[k]] = short_year_ki[k,1:tsize[k]]
-}
-#very slightly different results - found telehealth more effective?
-
-post_rho = jags_fit_time$BUGSoutput$mean$rho
-post_phi = jags_fit_time$BUGSoutput$mean$phi
-post_psi = jags_fit_time$BUGSoutput$mean$psi
-post_d = jags_fit_time$BUGSoutput$mean$d
-
-jags_fit_time$BUGSoutput$summary[1:5,c(1,3,7)]
-
-
-post_sd = jags_fit_time$BUGSoutput$mean$sd
-
-plot_years = NULL
-plot_pred_mu = NULL
-plot_pred_low = NULL
-plot_pred_high = NULL
-plot_k = NULL
-
-for(k in 2:K){
-  #find
-  obs_x = years_kt[[k]]
-  y = d_kt_list[[k]]
-  pred_x = 0:(10*T)/10
-  mu1 = rep(post_d[k],length(pred_x))
-  mu2 = rep(post_d[k],length(obs_x))
-  one_ind = 1:length(pred_x)
-  two_ind = (length(pred_x)+1):(length(pred_x) + length(obs_x))
-  
-  tot_years = c(pred_x,obs_x)
-  
-  phi_vec = jags_fit_time$BUGSoutput$sims.list$phi[,k]
-  rho_vec = jags_fit_time$BUGSoutput$sims.list$rho[,k]
-  psi_vec = jags_fit_time$BUGSoutput$sims.list$psi
-  
-  out_ntk = array(0,dim = c(length(psi_vec),length(pred_x),K))
-  for(n in 1:nrow(d_mat)){
-    
-    #find covariance
-    Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
-    for(i in 1:nrow(Sigma)){
-      
-      if(i <= length(pred_x)){
-        Sigma[i,i] = phi_vec[n]^2
-      } else {
-        Sigma[i,i] = psi_vec[n]^2 + phi_vec[n]^2
-      }
-      
-      if(i < nrow(Sigma)){
-        for(j in (i+1):ncol(Sigma)){
-          Sigma[i,j] = phi_vec[n]^2*exp(-rho_vec[n]*(tot_years[i] - tot_years[j])^2 )
-          Sigma[j,i] = Sigma[i,j]
-        }
-      }
-      
-    }
-    
-    Sigma11 = Sigma[one_ind,one_ind]
-    Sigma12 = Sigma[one_ind,two_ind]
-    Sigma22 = Sigma[two_ind,two_ind]
-    Sigma22_inv = solve(Sigma22)
-    Sigma21 = Sigma[two_ind,one_ind]
-    
-    out_ntk[n,,k] = mu1 + Sigma12 %*% Sigma22_inv %*%(y - mu2)
-    
-    if(n %% 50 ==0){
-      print(n)
-    }
-  }
-  
-  pred_mu = apply(out_ntk[,,k],2,mean)
-  quant_mat = apply(out_ntk[,,k],2,find_quant)
-  pred_low = quant_mat[1,]
-  pred_high = quant_mat[2,]
-  
-  plot_years = c(plot_years,first_year + pred_x)
-  plot_pred_mu = c(plot_pred_mu,pred_mu)
-  plot_pred_low = c(plot_pred_low,pred_low)
-  plot_pred_high = c(plot_pred_high,pred_high)
-  plot_k = c(plot_k,rep(k,length(pred_x)))
-  
-}
-
-df = data.frame("Years" = plot_years,
-                "Mean" = plot_pred_mu,
-                "Low" = plot_pred_low,
-                "High" = plot_pred_high,
-                "K" = as.factor(plot_k))
-
-ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
-  geom_line()
-
-ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
-  geom_line() +
-  facet_grid(~K) +
-  geom_ribbon(aes(ymin = Low, ymax = High),
-              alpha = 0.2, fill = "deepskyblue4")
-
-#extract mcmc chains
-d_mat = matrix(0,nrow = nrow(jags_fit$BUGSoutput$sims.matrix), ncol = K)
-#find each d_k^T (might be easier to do this in JAGS in future?)
-for(k in 2:K){
-  #find
-  obs_x = years_kt[[k]]
-  y = d_kt_list[[k]]
-  pred_x =T
-  mu1 = rep(post_d[k],length(pred_x))
-  mu2 = rep(post_d[k],length(obs_x))
-  one_ind = 1:length(pred_x)
-  two_ind = (length(pred_x)+1):(length(pred_x) + length(obs_x))
-  
-  tot_years = c(pred_x,obs_x)
-  
-  phi_vec = jags_fit_time$BUGSoutput$sims.list$phi[,k]
-  rho_vec = jags_fit_time$BUGSoutput$sims.list$rho[,k]
-  psi_vec = jags_fit_time$BUGSoutput$sims.list$psi
-  
-  
-  for(n in 1:nrow(d_mat)){
-    
-    #find covariance
-    Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
-    for(i in 1:nrow(Sigma)){
-      
-      if(i <= length(pred_x)){
-        Sigma[i,i] = phi_vec[n]^2
-      } else {
-        Sigma[i,i] = psi_vec[n]^2 + phi_vec[n]^2
-      }
-      
-      if(i < nrow(Sigma)){
-        for(j in (i+1):ncol(Sigma)){
-          Sigma[i,j] = phi_vec[n]^2*exp(-rho_vec[n]*(tot_years[i] - tot_years[j])^2 )
-          Sigma[j,i] = Sigma[i,j]
-        }
-      }
-      
-    }
-    
-    Sigma11 = Sigma[one_ind,one_ind]
-    Sigma12 = Sigma[one_ind,two_ind]
-    Sigma22 = Sigma[two_ind,two_ind]
-    Sigma22_inv = solve(Sigma22)
-    Sigma21 = Sigma[two_ind,one_ind]
-    
-    d_mat[n,k] = mu1 + Sigma12 %*% Sigma22_inv %*%(y - mu2)
-    
-    if(n %% 50 ==0){
-      print(n)
-    }
-  }
-}
-#calc mc rank prob for each treatment
-gpbnma_rank_prob = matrix(0,nrow = K, ncol = K)
-for(n in 1:nrow(d_mat)){
-  temp = order(d_mat[n,],decreasing = TRUE)
-  for(i in 1:length(temp)){
-    gpbnma_rank_prob[temp[i],i] = gpbnma_rank_prob[temp[i],i] + 1
-  }
-}
-for(k in 1:K){
-  gpbnma_rank_prob[k,] = gpbnma_rank_prob[k,]/sum(gpbnma_rank_prob[k,])
-}
-#calc sucra for each treatment
-gpbnma_sucra = rep(0,K)
-for(k in 1:K){
-  for(i in 1:(K-1)){
-    gpbnma_sucra[k] = gpbnma_sucra[k] + sum(gpbnma_rank_prob[k,1:i])
-  }
-}
-bnma_gp_sucra = gpbnma_sucra/(K-1)
+# 
+# ###########
+# # GP BNMA #
+# ###########
+# 
+# m_mu = 0
+# prec_mu = 1
+# 
+# #JAGS Now
+# 
+# #save data for jags
+# jags_data <- list("I", "n_ik","y_ik",
+#                   "num_treat","t_mat",
+#                   "m_mu","prec_mu",
+#                   "K",
+#                   "short_year_ki",
+#                   "tsize","TS",
+#                   "lts_ind")
+# 
+# #note which params to save
+# jags_params <- c("d","d_kt","sd",
+#                  "phi","rho","psi",
+#                  "delta")
+# 
+# #define inititailization values
+# jags_inits <- function(){
+#   list("sd" = runif(1,0,5)
+#   )
+# }
+# 
+# dir = getwd()
+# jags_file = paste0(dir,"/jags/BNMA_Like_Bin_Trial_Multi_Arm_Time_GP.bug")
+# 
+# #fit model
+# jags_fit_time <- R2jags::jags(data = jags_data,
+#                               inits = jags_inits,
+#                               parameters.to.save = jags_params,
+#                               n.chains = 3, n.iter = 9000,n.burnin = 1000,
+#                               model.file =  jags_file
+# )
+# 
+# print(jags_fit_time)
+# 
+# jags_fit_time$BUGSoutput$summary[1:5,c(1,3,7)]
+# 
+# post_d_time = jags_fit_time$BUGSoutput$mean$d
+# plot(d,post_d_time, xlab = "True d_{1k}", ylab = "Posterior Mean d_{1k}", main = "GP-BNMA")
+# lines(-5:5,-5:5)
+# 
+# post_delta_time = jags_fit_time$BUGSoutput$mean$delta
+# plot(delta,post_delta_time)
+# lines(-5:5,-5:5)
+# 
+# d_kt_post = jags_fit_time$BUGSoutput$mean$d_kt
+# 
+# d_kt_list = NULL
+# years_kt = NULL
+# for(k in 1:K){
+#   print(mean(d_kt_post[k,1:tsize[k]]))
+#   d_kt_list[[k]] = d_kt_post[k,1:tsize[k]]
+#   years_kt[[k]] = short_year_ki[k,1:tsize[k]]
+# }
+# #very slightly different results - found telehealth more effective?
+# 
+# post_rho = jags_fit_time$BUGSoutput$mean$rho
+# post_phi = jags_fit_time$BUGSoutput$mean$phi
+# post_psi = jags_fit_time$BUGSoutput$mean$psi
+# post_d = jags_fit_time$BUGSoutput$mean$d
+# 
+# jags_fit_time$BUGSoutput$summary[1:5,c(1,3,7)]
+# 
+# 
+# post_sd = jags_fit_time$BUGSoutput$mean$sd
+# 
+# plot_years = NULL
+# plot_pred_mu = NULL
+# plot_pred_low = NULL
+# plot_pred_high = NULL
+# plot_k = NULL
+# 
+# for(k in 2:K){
+#   #find
+#   obs_x = years_kt[[k]]
+#   y = d_kt_list[[k]]
+#   pred_x = 0:(10*T)/10
+#   mu1 = rep(post_d[k],length(pred_x))
+#   mu2 = rep(post_d[k],length(obs_x))
+#   one_ind = 1:length(pred_x)
+#   two_ind = (length(pred_x)+1):(length(pred_x) + length(obs_x))
+#   
+#   tot_years = c(pred_x,obs_x)
+#   
+#   phi_vec = jags_fit_time$BUGSoutput$sims.list$phi[,k]
+#   rho_vec = jags_fit_time$BUGSoutput$sims.list$rho[,k]
+#   psi_vec = jags_fit_time$BUGSoutput$sims.list$psi
+#   
+#   out_ntk = array(0,dim = c(length(psi_vec),length(pred_x),K))
+#   for(n in 1:nrow(d_mat)){
+#     
+#     #find covariance
+#     Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
+#     for(i in 1:nrow(Sigma)){
+#       
+#       if(i <= length(pred_x)){
+#         Sigma[i,i] = phi_vec[n]^2
+#       } else {
+#         Sigma[i,i] = psi_vec[n]^2 + phi_vec[n]^2
+#       }
+#       
+#       if(i < nrow(Sigma)){
+#         for(j in (i+1):ncol(Sigma)){
+#           Sigma[i,j] = phi_vec[n]^2*exp(-rho_vec[n]*(tot_years[i] - tot_years[j])^2 )
+#           Sigma[j,i] = Sigma[i,j]
+#         }
+#       }
+#       
+#     }
+#     
+#     Sigma11 = Sigma[one_ind,one_ind]
+#     Sigma12 = Sigma[one_ind,two_ind]
+#     Sigma22 = Sigma[two_ind,two_ind]
+#     Sigma22_inv = solve(Sigma22)
+#     Sigma21 = Sigma[two_ind,one_ind]
+#     
+#     out_ntk[n,,k] = mu1 + Sigma12 %*% Sigma22_inv %*%(y - mu2)
+#     
+#     if(n %% 50 ==0){
+#       print(n)
+#     }
+#   }
+#   
+#   pred_mu = apply(out_ntk[,,k],2,mean)
+#   quant_mat = apply(out_ntk[,,k],2,find_quant)
+#   pred_low = quant_mat[1,]
+#   pred_high = quant_mat[2,]
+#   
+#   plot_years = c(plot_years,first_year + pred_x)
+#   plot_pred_mu = c(plot_pred_mu,pred_mu)
+#   plot_pred_low = c(plot_pred_low,pred_low)
+#   plot_pred_high = c(plot_pred_high,pred_high)
+#   plot_k = c(plot_k,rep(k,length(pred_x)))
+#   
+# }
+# 
+# df = data.frame("Years" = plot_years,
+#                 "Mean" = plot_pred_mu,
+#                 "Low" = plot_pred_low,
+#                 "High" = plot_pred_high,
+#                 "K" = as.factor(plot_k))
+# 
+# ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
+#   geom_line()
+# 
+# ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
+#   geom_line() +
+#   facet_grid(~K) +
+#   geom_ribbon(aes(ymin = Low, ymax = High),
+#               alpha = 0.2, fill = "deepskyblue4")
+# 
+# #extract mcmc chains
+# d_mat = matrix(0,nrow = nrow(jags_fit$BUGSoutput$sims.matrix), ncol = K)
+# #find each d_k^T (might be easier to do this in JAGS in future?)
+# for(k in 2:K){
+#   #find
+#   obs_x = years_kt[[k]]
+#   y = d_kt_list[[k]]
+#   pred_x =T
+#   mu1 = rep(post_d[k],length(pred_x))
+#   mu2 = rep(post_d[k],length(obs_x))
+#   one_ind = 1:length(pred_x)
+#   two_ind = (length(pred_x)+1):(length(pred_x) + length(obs_x))
+#   
+#   tot_years = c(pred_x,obs_x)
+#   
+#   phi_vec = jags_fit_time$BUGSoutput$sims.list$phi[,k]
+#   rho_vec = jags_fit_time$BUGSoutput$sims.list$rho[,k]
+#   psi_vec = jags_fit_time$BUGSoutput$sims.list$psi
+#   
+#   
+#   for(n in 1:nrow(d_mat)){
+#     
+#     #find covariance
+#     Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
+#     for(i in 1:nrow(Sigma)){
+#       
+#       if(i <= length(pred_x)){
+#         Sigma[i,i] = phi_vec[n]^2
+#       } else {
+#         Sigma[i,i] = psi_vec[n]^2 + phi_vec[n]^2
+#       }
+#       
+#       if(i < nrow(Sigma)){
+#         for(j in (i+1):ncol(Sigma)){
+#           Sigma[i,j] = phi_vec[n]^2*exp(-rho_vec[n]*(tot_years[i] - tot_years[j])^2 )
+#           Sigma[j,i] = Sigma[i,j]
+#         }
+#       }
+#       
+#     }
+#     
+#     Sigma11 = Sigma[one_ind,one_ind]
+#     Sigma12 = Sigma[one_ind,two_ind]
+#     Sigma22 = Sigma[two_ind,two_ind]
+#     Sigma22_inv = solve(Sigma22)
+#     Sigma21 = Sigma[two_ind,one_ind]
+#     
+#     d_mat[n,k] = mu1 + Sigma12 %*% Sigma22_inv %*%(y - mu2)
+#     
+#     if(n %% 50 ==0){
+#       print(n)
+#     }
+#   }
+# }
+# #calc mc rank prob for each treatment
+# gpbnma_rank_prob = matrix(0,nrow = K, ncol = K)
+# for(n in 1:nrow(d_mat)){
+#   temp = order(d_mat[n,],decreasing = TRUE)
+#   for(i in 1:length(temp)){
+#     gpbnma_rank_prob[temp[i],i] = gpbnma_rank_prob[temp[i],i] + 1
+#   }
+# }
+# for(k in 1:K){
+#   gpbnma_rank_prob[k,] = gpbnma_rank_prob[k,]/sum(gpbnma_rank_prob[k,])
+# }
+# #calc sucra for each treatment
+# gpbnma_sucra = rep(0,K)
+# for(k in 1:K){
+#   for(i in 1:(K-1)){
+#     gpbnma_sucra[k] = gpbnma_sucra[k] + sum(gpbnma_rank_prob[k,1:i])
+#   }
+# }
+# bnma_gp_sucra = gpbnma_sucra/(K-1)
