@@ -1,6 +1,7 @@
 library(igraph)
 library(ggplot2)
 library(R2jags)
+library(scales)
 
 dat = read.csv("Data/data_tbnma.csv")
 
@@ -86,25 +87,38 @@ for(i in unique(treat_mat[,1])){
   }
 }
 
-g2 = graph_from_data_frame(d = treat_mat, directed = FALSE)
-node_vec = unique(as.vector(treat_mat))
+uniq_treat_mat = unique(treat_mat)
+uniq_treat_mat = uniq_treat_mat[1:22,]
+
+g2 = graph_from_data_frame(d = uniq_treat_mat, directed = FALSE)
+node_vec = unique(as.vector(uniq_treat_mat))
 size_vec = rep(0,length(node_vec))
 for(i in 1:length(node_vec)){
-  size_vec[i] = 10*sum(treat_mat == node_vec[i])^(1/3)
+  size_vec[i] = 5*sum(treat_mat == node_vec[i])^(1/3)
 }
 V(g2)$size = size_vec
-l = layout_with_kk(g2)
+E(g2)$weight = c(13,4,2,3,2,6,4,4,2,4,2,
+                 1,1,1,1,1,1,5,1,1,
+                 1,2)
+l = layout.circle(g2)
+radian.rescale <- function(x, start=0, direction=1) {
+  c.rotate <- function(x) (x + start) %% (2 * pi) * direction
+  c.rotate(scales::rescale(x, c(0, 2 * pi), range(x)))
+}
+lab.locs <- radian.rescale(x=1:max(node_vec), direction=-1, start=0)
 plot(g2, 
      layout = l,
      vertex.label = treatment_map$Treatment[node_vec],
-     vertex.label.dist = c(0, 0, 0, 0,
-                           2, 3, 2, -2,
-                           2, -2, -2, -2,
-                           -2, -2, -2, -2,
-                           2, 2),
+     # vertex.label.degree=lab.locs,
+     vertex.label.dist = c(0,0,1.5,1.5,
+                           1.5,1.5,-1.5,-1.5,
+                           -1.5,-1.5,-1.5,-1.5,
+                           -1.5,-1.5,-1.5,-1.5,
+                           -1.5,-1.5,1.5),
      vertex.label.color = "blue",
      vertex.color = "aquamarine",
-     edge.color = "black")
+     edge.color = "black",
+     edge.width = E(g2)$weight)
 #make time structures
 
 #find how many datapoints for each treatment

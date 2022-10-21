@@ -84,3 +84,38 @@ Huang et al. 201839,2018,VAN,,,50,61,Brown
 Prince et al. 201334,2013,LEF,,,29,34,Brown
 Prince et al. 201334,2013,VAN,,,32,39,Brown
 Prince et al. 201334,2013,LEF,,,28,32,Brown
+Sharpe et al 2005,2005,LIN,,,29,30,McCool
+Sharpe et al 2005,2005,VAN,,,13,30,McCool
+Evers et al ,2013,DAP,,,17,20,McCool
+Evers et al ,2013,TEL,,,17,20,McCool
+Fang et al ,2012,LIN,,,288,335,Thom
+Fang et al ,2012,TED,,,284,332,Thom
+Fang,2013,LIN,,,293,334,Thom
+Fang,2013,TED,,,292,332,Thom
+Krievins et al,2009,ICL,,,28,30,Thom
+Krievins et al,2009,ICL,,,29,32,Thom
+Krievins et al,2009,VAN,,,28,30,Thom
+Stevens et al,2000,LIN,,,279,400,Thom
+Stevens et al,2000,OXA,,,272,419,Thom
+Teras et al,2008,TIG,,,150,167,Guest
+Teras et al,2008,VAN,,,151,159,Guest
+Wunderlink et al 1,2003,LIN,,,209,321,Feng
+Wunderlink et al 1,2003,VAN,,,187,302,Feng
+Wunderlink et al 2,2008,LIN,,,22,30,Feng
+Wunderlink et al 2,2008,VAN,,,16,20,Feng
+Wunderlink et al 3,2012,LIN,,,116,172,Feng
+Wunderlink et al 3,2012,VAN,,,112,176,Feng
+Jaksic et al,2006,LIN,,,179,304,Feng
+Jaksic et al,2006,VAN,,,161,301,Feng
+Rubinstein et al,2001,LIN,,,142,203,Feng
+Rubinstein et al,2001,VAN,,,131,193,Feng
+Kauf et al,2015,DAP,,,64,118,Feng
+Kauf et al,2015,VAN,,,57,106,Feng
+Shaw et al,2015,DAP,,,29,50,Feng
+Shaw et al,2015,VAN,,,35,50,Feng
+Lv et al,2019,LIN,,,209,300,Feng
+Lv et al,2019,TED,,,192,298,Feng
+Mikamo et al,2018,LIN,,,34,38,Lan
+Mikamo et al,2018,TED,,,64,78,Lan
+Yogev et al,2003,LIN,,,75,80,Li
+Yogev et al,2003,VAN,,,36,40,Li
