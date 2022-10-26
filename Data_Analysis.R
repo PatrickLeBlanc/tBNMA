@@ -265,7 +265,7 @@ jags_data <- list("I","n_ik","y_ik",
                   "years")
 
 #note which params to save
-jags_params <- c("b","d","sd")
+jags_params <- c("b","d","sd", "z_k")
 
 #define inititailization values
 jags_inits <- function(){
@@ -274,7 +274,7 @@ jags_inits <- function(){
 }
 
 dir = getwd()
-jags_file = paste0(dir,"/jags/BNMA_Like_Bin_Trial_Multi_Arm_Time.bug")
+jags_file = paste0(dir,"/jags/BNMA_Like_Bin_Trial_Multi_Arm_Time_Z.bug")
 
 #fit model
 set.seed(123)
@@ -560,7 +560,7 @@ plot_pred_low = NULL
 plot_pred_high = NULL
 plot_k = NULL
 
-for(k in c(2,3,8:10,15:17)){
+for(k in c(2,8,9,10,15)){
   # obs_x = years_kt[[k]]
   # y = d_kt_list[[k]]
   # pred_x = 0:(10*T)/10

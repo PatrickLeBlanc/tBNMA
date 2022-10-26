@@ -1,0 +1,91 @@
+model {
+
+for(i in 1:I){        
+
+  for(k in 1:num_treat[i]){
+    y_ik[i,k] ~ dbin(p_ik[i,k],n_ik[i,k])
+    p_ik[i,k] = exp(mu[i]+delta[i,k])/(1 + exp(mu[i] + delta[i,k]))
+  }
+  
+  mu[i] ~ dnorm(m_mu,prec_mu)
+  w[i,1] = 0
+  delta[i,1] = 0
+
+  for(k in 2:num_treat[i]){
+    w[i,k] = (delta[i,k] - d_kt[t_mat[i,k],lts_ind[t_mat[i,k],i]] + d_kt[t_mat[i,1],lts_ind[t_mat[i,1],i]])
+    sw[i,k] = sum(w[i,1:(k-1)])/(k-1)
+    taud[i,k] = tau*2*(k-1)/k
+    
+    md[i,k] = d_kt[t_mat[i,k],lts_ind[t_mat[i,k],i]] - d_kt[t_mat[i,1],lts_ind[t_mat[i,1],i]] + sw[i,k]
+    delta[i,k] ~ dnorm(md[i,k],taud[i,k])  
+  }
+    
+
+}
+
+for(t in 1:TS){
+  d_kt[1,t] <- 0
+}
+
+for(k in 2:K){
+  draw[k,1:tsize[k]] ~ dmnorm(Mean[1:tsize[k],k], Sigma_inv[1:tsize[k],1:tsize[k],k])
+  for(t in 1:tsize[k]){
+    d_kt[k,t] = z_k[k]*draw[k,t] + (1-z_k[k])*d[k]
+  }
+  for(t in (tsize[k]+1):TS){
+    d_kt[k,t] = 0
+    draw[k,t] = 0
+  }
+  Sigma_inv[1:tsize[k],1:tsize[k],k] <- inverse(Sigma[1:tsize[k],1:tsize[k],k])
+  
+  for(t in 1:tsize[k]){
+    Mean[t,k] = d[k]
+    
+    Sigma[t,t,k] = pow(psi,2) + pow(phi[k],2)
+    for(j in (t+1):tsize[k]){
+      Sigma[t,j,k] = pow(phi[k],2)*exp(-rho[k]*pow(short_year_ki[k,t] - short_year_ki[k,j],2) )
+      Sigma[j,t,k] = Sigma[t,j,k]
+    }
+  }
+  
+}
+
+psi ~ dunif(0,5)
+phi[1] = 0
+rho[1] = 0
+for(k in 2:K){
+  phi[k] ~ dunif(0, 5)
+  rho[k] ~ dunif(0.001, 1)
+}
+
+
+d[1] <- 0                                           
+for(k in 2:K){                                      
+  d[k] ~ dnorm(0,0.0001)                            
+}
+
+sd ~ dunif(0,5)                                    
+tau <- pow(sd,-2)           
+
+z_k[1] = 0
+  z_k[2] = 1
+  z_k[3] = 0
+  z_k[4] = 0
+  z_k[5] = 0
+  z_k[6]= 0
+  z_k[7] = 0
+  z_k[8] = 1
+  z_k[9] = 1
+  z_k[10] = 1
+  z_k[11] = 0
+  z_k[12] = 0
+  z_k[13] = 0
+  z_k[14] = 0
+  z_k[15] = 1
+  z_k[16] = 0
+  z_k[17] = 0
+  z_k[18] = 0
+  z_k[19] = 0
+   
+  
+}
