@@ -153,6 +153,20 @@ for(k in 2:K){
   }
 }
 
+
+# #for k = 2, implement sigmoidal function with mean 0
+# k = 2
+# # height = rgamma(1,1,1)
+# # scale = rgamma(1,1,1)
+# # center = runif(1,0,T)
+# height = 2
+# scale = 1
+# center = T/2
+# for(t in 1:tsize[k]){
+#   d_kt[k,t] = d[k] - height +  2*height/(1+exp(-scale*(short_year_ki[k,t] - center)))
+# }
+# plot(short_year_ki[k,1:tsize[k]],d_kt[k,1:tsize[k]])
+
 #simulate delta for each study
 #implicitly assume that delta for t1 is zero and that there are only 2 treatments
 delta = matrix(0,nrow = I, ncol = max(num_treat))
@@ -183,10 +197,13 @@ for(i in 1:I){
 mu_i = rnorm(I,0,sd = 1)
 
 #simulate number of pateitns
-lambdas = c(50,250,1000)
 n_ik = matrix(0,nrow = I, ncol = max(num_treat))
+count = 1
 for(i in 1:I){
-  n_ik[i,1:num_treat[i]] = rpois(num_treat[i],sample(lambdas,1,prob = c(7/16,7/16,2/16)))
+  for(j in 1:num_treat[i]){
+    n_ik[i,j] = dat$Trials[count]
+    count = count + 1
+  }
 }
 
 #simulate y
@@ -341,6 +358,7 @@ bnma_meta_sucra = bnma_meta_sucra/(K-1)
 # BNMA Sigmoidal #
 ##################
 
+pi = 0.1
 m_mu = 0
 prec_mu = 1
 
@@ -350,7 +368,8 @@ jags_data <- list("I","n_ik","y_ik",
                   "K",
                   "short_year_ki",
                   "tsize","TS",
-                  "lts_ind", "T")
+                  "lts_ind", "T",
+                  "pi")
 
 #note which params to save
 jags_params <- c("z_k","d",
@@ -663,67 +682,115 @@ plot_pred_low = NULL
 plot_pred_high = NULL
 plot_k = NULL
 
-for(k in 2:K){
-  #find
+for(k in c(2,8,9,10,15)){
   obs_x = years_kt[[k]]
   y = d_kt_list[[k]]
   pred_x = 0:(10*T)/10
+
   mu1 = rep(post_d[k],length(pred_x))
   mu2 = rep(post_d[k],length(obs_x))
-  one_ind = 1:length(pred_x)
-  two_ind = (length(pred_x)+1):(length(pred_x) + length(obs_x))
 
+
+  #find covariance
   tot_years = c(pred_x,obs_x)
+  Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
+  for(i in 1:nrow(Sigma)){
 
-  phi_vec = jags_fit_time$BUGSoutput$sims.list$phi[,k]
-  rho_vec = jags_fit_time$BUGSoutput$sims.list$rho[,k]
-  psi_vec = jags_fit_time$BUGSoutput$sims.list$psi
-
-  out_ntk = array(0,dim = c(length(psi_vec),length(pred_x),K))
-  for(n in 1:nrow(d_mat)){
-
-    #find covariance
-    Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
-    for(i in 1:nrow(Sigma)){
-
-      if(i <= length(pred_x)){
-        Sigma[i,i] = phi_vec[n]^2
-      } else {
-        Sigma[i,i] = psi_vec[n]^2 + phi_vec[n]^2
-      }
-
-      if(i < nrow(Sigma)){
-        for(j in (i+1):ncol(Sigma)){
-          Sigma[i,j] = phi_vec[n]^2*exp(-rho_vec[n]*(tot_years[i] - tot_years[j])^2 )
-          Sigma[j,i] = Sigma[i,j]
-        }
-      }
-
+    if(i <= length(pred_x)){
+      Sigma[i,i] = post_phi[k]^2
+    } else {
+      Sigma[i,i] = post_psi^2 + post_phi[k]^2
     }
 
-    Sigma11 = Sigma[one_ind,one_ind]
-    Sigma12 = Sigma[one_ind,two_ind]
-    Sigma22 = Sigma[two_ind,two_ind]
-    Sigma22_inv = solve(Sigma22)
-    Sigma21 = Sigma[two_ind,one_ind]
-
-    out_ntk[n,,k] = mu1 + Sigma12 %*% Sigma22_inv %*%(y - mu2)
-
-    if(n %% 50 ==0){
-      print(n)
+    if(i < nrow(Sigma)){
+      for(j in (i+1):ncol(Sigma)){
+        Sigma[i,j] = post_phi[k]^2*exp(-post_rho[k]*(tot_years[i] - tot_years[j])^2 )
+        Sigma[j,i] = Sigma[i,j]
+      }
     }
+
   }
 
-  pred_mu = apply(out_ntk[,,k],2,mean)
-  quant_mat = apply(out_ntk[,,k],2,find_quant)
-  pred_low = quant_mat[1,]
-  pred_high = quant_mat[2,]
+  one_ind = 1:length(pred_x)
+  two_ind = (length(pred_x)+1):(length(pred_x) + length(obs_x))
+  Sigma11 = Sigma[one_ind,one_ind]
+  Sigma12 = Sigma[one_ind,two_ind]
+  Sigma22 = Sigma[two_ind,two_ind]
+  Sigma22_inv = solve(Sigma22)
+  Sigma21 = Sigma[two_ind,one_ind]
+
+  pred_mu = mu1 + Sigma12 %*% Sigma22_inv %*%(y - mu2)
+  pred_Sigma = Sigma11 - Sigma12 %*% Sigma22_inv %*% Sigma21
+
+  pred_low = pred_mu - 1.95 * sqrt(diag(pred_Sigma))
+  pred_high = pred_mu + 1.95 * sqrt(diag(pred_Sigma))
 
   plot_years = c(plot_years,first_year + pred_x)
   plot_pred_mu = c(plot_pred_mu,pred_mu)
   plot_pred_low = c(plot_pred_low,pred_low)
   plot_pred_high = c(plot_pred_high,pred_high)
-  plot_k = c(plot_k,rep(k,length(pred_x)))
+  plot_k = c(plot_k,rep(treatment_map$Treatment[k],length(pred_x)))
+  
+  # #find
+  # obs_x = years_kt[[k]]
+  # y = d_kt_list[[k]]
+  # pred_x = 0:(10*T)/10
+  # mu1 = rep(post_d[k],length(pred_x))
+  # mu2 = rep(post_d[k],length(obs_x))
+  # one_ind = 1:length(pred_x)
+  # two_ind = (length(pred_x)+1):(length(pred_x) + length(obs_x))
+  # 
+  # tot_years = c(pred_x,obs_x)
+  # 
+  # phi_vec = jags_fit_time$BUGSoutput$sims.list$phi[,k]
+  # rho_vec = jags_fit_time$BUGSoutput$sims.list$rho[,k]
+  # psi_vec = jags_fit_time$BUGSoutput$sims.list$psi
+  # 
+  # out_ntk = array(0,dim = c(length(psi_vec),length(pred_x),K))
+  # for(n in 1:nrow(d_mat)){
+  # 
+  #   #find covariance
+  #   Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
+  #   for(i in 1:nrow(Sigma)){
+  # 
+  #     if(i <= length(pred_x)){
+  #       Sigma[i,i] = phi_vec[n]^2
+  #     } else {
+  #       Sigma[i,i] = psi_vec[n]^2 + phi_vec[n]^2
+  #     }
+  # 
+  #     if(i < nrow(Sigma)){
+  #       for(j in (i+1):ncol(Sigma)){
+  #         Sigma[i,j] = phi_vec[n]^2*exp(-rho_vec[n]*(tot_years[i] - tot_years[j])^2 )
+  #         Sigma[j,i] = Sigma[i,j]
+  #       }
+  #     }
+  # 
+  #   }
+  # 
+  #   Sigma11 = Sigma[one_ind,one_ind]
+  #   Sigma12 = Sigma[one_ind,two_ind]
+  #   Sigma22 = Sigma[two_ind,two_ind]
+  #   Sigma22_inv = solve(Sigma22)
+  #   Sigma21 = Sigma[two_ind,one_ind]
+  # 
+  #   out_ntk[n,,k] = mu1 + Sigma12 %*% Sigma22_inv %*%(y - mu2)
+  # 
+  #   if(n %% 50 ==0){
+  #     print(n)
+  #   }
+  # }
+  # 
+  # pred_mu = apply(out_ntk[,,k],2,mean)
+  # quant_mat = apply(out_ntk[,,k],2,find_quant)
+  # pred_low = quant_mat[1,]
+  # pred_high = quant_mat[2,]
+  # 
+  # plot_years = c(plot_years,first_year + pred_x)
+  # plot_pred_mu = c(plot_pred_mu,pred_mu)
+  # plot_pred_low = c(plot_pred_low,pred_low)
+  # plot_pred_high = c(plot_pred_high,pred_high)
+  # plot_k = c(plot_k,rep(treatment_map$Treatment[k],length(pred_x)))
 
 }
 
@@ -733,14 +800,16 @@ df = data.frame("Years" = plot_years,
                 "High" = plot_pred_high,
                 "K" = as.factor(plot_k))
 
-ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
-  geom_line()
+# ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
+#   geom_line()
 
 ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
   geom_line() +
-  facet_grid(~K) +
+  facet_wrap(~K) +
   geom_ribbon(aes(ymin = Low, ymax = High),
-              alpha = 0.2, fill = "deepskyblue4")
+              alpha = 0.2, fill = "deepskyblue4") + 
+  xlab("Years") + 
+  ylab("Treatment Effect")
 
 #extract mcmc chains
 d_mat = matrix(0,nrow = nrow(jags_fit$BUGSoutput$sims.matrix), ncol = K)
@@ -824,6 +893,9 @@ greater_than_zero = function(x){
   return(sum((x>0))/length(x))
 }
 
+#####
+# Mean and CI
+
 post_prob =NULL
 model = NULL
 treatment = NULL
@@ -876,6 +948,13 @@ model = c(model,rep("GP-BNMA",length(temp)))
 treatment = c(treatment,treatment_map$Treatment)
 line = c(line,rep(0,length(temp)))
 
+post_prob = c(post_prob,rep(0,length(temp)))
+post_mean = c(post_mean,d)
+low_bound = c(low_bound,d)
+up_bound = c(up_bound,d)
+model = c(model,rep("Truth",length(temp)))
+treatment = c(treatment, treatment_map$Treatment)
+line = c(line,rep(0,length(temp)))
 
 df = data.frame(Probability = post_prob,
                 Mean = post_mean,
@@ -885,19 +964,67 @@ df = data.frame(Probability = post_prob,
                 Model = as.factor(model),
                 Line = line)
 
-ggplot(data = df, aes(x = Treatment, y = Probability, fill = Model)) +
-  geom_bar(stat = "identity", position = "dodge") + 
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-
 ggplot(df) + 
-  geom_errorbar(aes(x = Treatment, y = Mean, ymin=Low, ymax=Up, color = Model),
+  geom_errorbar(aes(x = Model, y = Mean, ymin=Low, ymax=Up, color = Model),
                 position = position_dodge(0.75),
                 size = 1.5) +
-  geom_point( aes(x = Treatment, y = Mean, color = Model), 
+  geom_point( aes(x = Model, y = Mean, color = Model), 
               position = position_dodge(0.75), 
               size = 3, shape = 21, fill = "white") +
-  coord_flip() +
-  xlab("Treatment") + 
-  ylab("Treatment Effect")
+  facet_wrap(~Treatment) + 
+  coord_flip() + 
+  xlab("Model") + 
+  ylab("Treatment Effect") + 
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=16,face="bold"),
+        legend.position = "none")
 
-
+# 
+# #####
+# # Boxplots
+# 
+# model = NULL
+# treatment = NULL
+# post_mean = NULL
+# up_bound = NULL
+# low_bound = NULL
+# line = NULL
+# 
+# post_d = jags_fit$BUGSoutput$sims.list$d
+# for(k in 1:ncol(post_d)){
+#   post_mean = c(post_mean,post_d[,k])
+#   model = c(model,rep("BNMA",nrow(post_d)))
+#   treatment = c(treatment,rep(treatment_map$Treatment[k],nrow(post_d)))
+# }
+# 
+# 
+# post_d = jags_fit_meta$BUGSoutput$sims.list$d
+# for(k in 1:ncol(post_d)){
+#   post_mean = c(post_mean,post_d[,k])
+#   model = c(model,rep("Meta-BNMA",nrow(post_d)))
+#   treatment = c(treatment,rep(treatment_map$Treatment[k],nrow(post_d)))
+# }
+# 
+# post_d = jags_fit_sig$BUGSoutput$sims.list$d
+# for(k in 1:ncol(post_d)){
+#   post_mean = c(post_mean,post_d[,k])
+#   model = c(model,rep("Sig-BNMA",nrow(post_d)))
+#   treatment = c(treatment,rep(treatment_map$Treatment[k],nrow(post_d)))
+# }
+# 
+# post_d = jags_fit_time$BUGSoutput$sims.list$d
+# for(k in 1:ncol(post_d)){
+#   post_mean = c(post_mean,post_d[,k])
+#   model = c(model,rep("GP-BNMA",nrow(post_d)))
+#   treatment = c(treatment,rep(treatment_map$Treatment[k],nrow(post_d)))
+# }
+# 
+# df = data.frame(Mean = post_mean,
+#                 Treatment = as.factor(treatment_map$Treatment),
+#                 Model = as.factor(model))
+# 
+# ggplot(df,aes(x = Model, y = Mean)) + 
+#   geom_boxplot() + 
+#   facet_wrap(~Treatment)
+# 
+# 
