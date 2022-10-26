@@ -195,6 +195,7 @@ for(i in 1:I){
 
 #simulate trial specific baseline effects
 mu_i = rnorm(I,0,sd = 1)
+mu_i[12] = abs(mu_i[12])
 
 #simulate number of pateitns
 n_ik = matrix(0,nrow = I, ncol = max(num_treat))
@@ -261,29 +262,29 @@ lines(-5:5,-5:5)
 #bad at estimating end-time effect
 
 
-#calculate sucra
-
-#extract mcmc chains
-d_mat = jags_fit$BUGSoutput$sims.matrix[,1:5]
-#calc mc rank prob for each treatment
-bnma_rank_prob = matrix(0,nrow = K, ncol = K)
-for(n in 1:nrow(d_mat)){
-  temp = order(d_mat[n,],decreasing = TRUE)
-  for(i in 1:length(temp)){
-    bnma_rank_prob[temp[i],i] = bnma_rank_prob[temp[i],i] + 1
-  }
-}
-for(k in 1:K){
-  bnma_rank_prob[k,] = bnma_rank_prob[k,]/sum(bnma_rank_prob[k,])
-}
-#calc sucra for each treatment
-bnma_sucra = rep(0,K)
-for(k in 1:K){
-  for(i in 1:(K-1)){
-    bnma_sucra[k] = bnma_sucra[k] + sum(bnma_rank_prob[k,1:i])
-  }
-}
-bnma_sucra = bnma_sucra/(K-1)
+# #calculate sucra
+# 
+# #extract mcmc chains
+# d_mat = jags_fit$BUGSoutput$sims.matrix[,1:5]
+# #calc mc rank prob for each treatment
+# bnma_rank_prob = matrix(0,nrow = K, ncol = K)
+# for(n in 1:nrow(d_mat)){
+#   temp = order(d_mat[n,],decreasing = TRUE)
+#   for(i in 1:length(temp)){
+#     bnma_rank_prob[temp[i],i] = bnma_rank_prob[temp[i],i] + 1
+#   }
+# }
+# for(k in 1:K){
+#   bnma_rank_prob[k,] = bnma_rank_prob[k,]/sum(bnma_rank_prob[k,])
+# }
+# #calc sucra for each treatment
+# bnma_sucra = rep(0,K)
+# for(k in 1:K){
+#   for(i in 1:(K-1)){
+#     bnma_sucra[k] = bnma_sucra[k] + sum(bnma_rank_prob[k,1:i])
+#   }
+# }
+# bnma_sucra = bnma_sucra/(K-1)
 
 
 ###################
@@ -325,34 +326,34 @@ jags_fit_meta = R2jags::jags(data = jags_data,
 
 print(jags_fit_meta)
 
-#calculate sucra
-
-#extract mcmc chains
-d_mat = matrix(0,nrow = nrow(jags_fit$BUGSoutput$sims.matrix), ncol = K)
-#find each d_k^T (might be easier to do this in JAGS in future?)
-for(k in 1:K){
-  d_mat[,k] = jags_fit_meta$BUGSoutput$sims.matrix[,K + k] + T*jags_fit_meta$BUGSoutput$sims.matrix[,k]
-}
-
-#calc mc rank prob for each treatment
-bnma_meta_rank_prob = matrix(0,nrow = K, ncol = K)
-for(n in 1:nrow(d_mat)){
-  temp = order(d_mat[n,],decreasing = TRUE)
-  for(i in 1:length(temp)){
-    bnma_meta_rank_prob[temp[i],i] = bnma_meta_rank_prob[temp[i],i] + 1
-  }
-}
-for(k in 1:K){
-  bnma_meta_rank_prob[k,] = bnma_meta_rank_prob[k,]/sum(bnma_meta_rank_prob[k,])
-}
-#calc sucra for each treatment
-bnma_meta_sucra = rep(0,K)
-for(k in 1:K){
-  for(i in 1:(K-1)){
-    bnma_meta_sucra[k] = bnma_meta_sucra[k] + sum(bnma_meta_rank_prob[k,1:i])
-  }
-}
-bnma_meta_sucra = bnma_meta_sucra/(K-1)
+# #calculate sucra
+# 
+# #extract mcmc chains
+# d_mat = matrix(0,nrow = nrow(jags_fit$BUGSoutput$sims.matrix), ncol = K)
+# #find each d_k^T (might be easier to do this in JAGS in future?)
+# for(k in 1:K){
+#   d_mat[,k] = jags_fit_meta$BUGSoutput$sims.matrix[,K + k] + T*jags_fit_meta$BUGSoutput$sims.matrix[,k]
+# }
+# 
+# #calc mc rank prob for each treatment
+# bnma_meta_rank_prob = matrix(0,nrow = K, ncol = K)
+# for(n in 1:nrow(d_mat)){
+#   temp = order(d_mat[n,],decreasing = TRUE)
+#   for(i in 1:length(temp)){
+#     bnma_meta_rank_prob[temp[i],i] = bnma_meta_rank_prob[temp[i],i] + 1
+#   }
+# }
+# for(k in 1:K){
+#   bnma_meta_rank_prob[k,] = bnma_meta_rank_prob[k,]/sum(bnma_meta_rank_prob[k,])
+# }
+# #calc sucra for each treatment
+# bnma_meta_sucra = rep(0,K)
+# for(k in 1:K){
+#   for(i in 1:(K-1)){
+#     bnma_meta_sucra[k] = bnma_meta_sucra[k] + sum(bnma_meta_rank_prob[k,1:i])
+#   }
+# }
+# bnma_meta_sucra = bnma_meta_sucra/(K-1)
 
 ##################
 # BNMA Sigmoidal #
@@ -467,47 +468,47 @@ ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
 #again, accurate inference to mean
 
 
-#calculate sucra
-
-#extract mcmc chains
-d_mat = matrix(0,nrow = nrow(jags_fit_sig$BUGSoutput$sims.matrix), ncol = K)
-#find each d_k^T (might be easier to do this in JAGS in future?)
-for(k in 1:K){
-
-  d_k = jags_fit_sig$BUGSoutput$sims.matrix[,K + k]
-  a_k = jags_fit_sig$BUGSoutput$sims.matrix[,2*K + 1 + k]
-  b_k = jags_fit_sig$BUGSoutput$sims.matrix[,3*K + 2 + k]
-  c_k = jags_fit_sig$BUGSoutput$sims.matrix[,k]
-  psi = jags_fit_sig$BUGSoutput$sims.matrix[,17]
-
-  z_k = jags_fit_sig$BUGSoutput$sims.matrix[,22 + k]
-
-  for(it in 1:nrow(d_mat)){
-    sig_draw = rnorm(1,(d_k[it] - a_k[it]) + 2*(d_k[it] + a_k[it])/(1+exp(-b_k[it]*(T - c_k[it]))),psi^2)
-    d_mat[it,k] = z_k[it]*sig_draw + (1-z_k[it])*d_k[it]
-  }
-
-}
-
-#calc mc rank prob for each treatment
-bnma_sig_rank_prob = matrix(0,nrow = K, ncol = K)
-for(n in 1:nrow(d_mat)){
-  temp = order(d_mat[n,],decreasing = TRUE)
-  for(i in 1:length(temp)){
-    bnma_sig_rank_prob[temp[i],i] = bnma_sig_rank_prob[temp[i],i] + 1
-  }
-}
-for(k in 1:K){
-  bnma_sig_rank_prob[k,] = bnma_sig_rank_prob[k,]/sum(bnma_sig_rank_prob[k,])
-}
-#calc sucra for each treatment
-bnma_sig_sucra = rep(0,K)
-for(k in 1:K){
-  for(i in 1:(K-1)){
-    bnma_sig_sucra[k] = bnma_sig_sucra[k] + sum(bnma_sig_rank_prob[k,1:i])
-  }
-}
-bnma_sig_sucra = bnma_sig_sucra/(K-1)
+# #calculate sucra
+# 
+# #extract mcmc chains
+# d_mat = matrix(0,nrow = nrow(jags_fit_sig$BUGSoutput$sims.matrix), ncol = K)
+# #find each d_k^T (might be easier to do this in JAGS in future?)
+# for(k in 1:K){
+# 
+#   d_k = jags_fit_sig$BUGSoutput$sims.matrix[,K + k]
+#   a_k = jags_fit_sig$BUGSoutput$sims.matrix[,2*K + 1 + k]
+#   b_k = jags_fit_sig$BUGSoutput$sims.matrix[,3*K + 2 + k]
+#   c_k = jags_fit_sig$BUGSoutput$sims.matrix[,k]
+#   psi = jags_fit_sig$BUGSoutput$sims.matrix[,17]
+# 
+#   z_k = jags_fit_sig$BUGSoutput$sims.matrix[,22 + k]
+# 
+#   for(it in 1:nrow(d_mat)){
+#     sig_draw = rnorm(1,(d_k[it] - a_k[it]) + 2*(d_k[it] + a_k[it])/(1+exp(-b_k[it]*(T - c_k[it]))),psi^2)
+#     d_mat[it,k] = z_k[it]*sig_draw + (1-z_k[it])*d_k[it]
+#   }
+# 
+# }
+# 
+# #calc mc rank prob for each treatment
+# bnma_sig_rank_prob = matrix(0,nrow = K, ncol = K)
+# for(n in 1:nrow(d_mat)){
+#   temp = order(d_mat[n,],decreasing = TRUE)
+#   for(i in 1:length(temp)){
+#     bnma_sig_rank_prob[temp[i],i] = bnma_sig_rank_prob[temp[i],i] + 1
+#   }
+# }
+# for(k in 1:K){
+#   bnma_sig_rank_prob[k,] = bnma_sig_rank_prob[k,]/sum(bnma_sig_rank_prob[k,])
+# }
+# #calc sucra for each treatment
+# bnma_sig_sucra = rep(0,K)
+# for(k in 1:K){
+#   for(i in 1:(K-1)){
+#     bnma_sig_sucra[k] = bnma_sig_sucra[k] + sum(bnma_sig_rank_prob[k,1:i])
+#   }
+# }
+# bnma_sig_sucra = bnma_sig_sucra/(K-1)
 
 ###########
 # GP BNMA #
@@ -811,79 +812,79 @@ ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
   xlab("Years") + 
   ylab("Treatment Effect")
 
-#extract mcmc chains
-d_mat = matrix(0,nrow = nrow(jags_fit$BUGSoutput$sims.matrix), ncol = K)
-#find each d_k^T (might be easier to do this in JAGS in future?)
-for(k in 2:K){
-  #find
-  obs_x = years_kt[[k]]
-  y = d_kt_list[[k]]
-  pred_x =T
-  mu1 = rep(post_d[k],length(pred_x))
-  mu2 = rep(post_d[k],length(obs_x))
-  one_ind = 1:length(pred_x)
-  two_ind = (length(pred_x)+1):(length(pred_x) + length(obs_x))
-
-  tot_years = c(pred_x,obs_x)
-
-  phi_vec = jags_fit_time$BUGSoutput$sims.list$phi[,k]
-  rho_vec = jags_fit_time$BUGSoutput$sims.list$rho[,k]
-  psi_vec = jags_fit_time$BUGSoutput$sims.list$psi
-
-
-  for(n in 1:nrow(d_mat)){
-
-    #find covariance
-    Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
-    for(i in 1:nrow(Sigma)){
-
-      if(i <= length(pred_x)){
-        Sigma[i,i] = phi_vec[n]^2
-      } else {
-        Sigma[i,i] = psi_vec[n]^2 + phi_vec[n]^2
-      }
-
-      if(i < nrow(Sigma)){
-        for(j in (i+1):ncol(Sigma)){
-          Sigma[i,j] = phi_vec[n]^2*exp(-rho_vec[n]*(tot_years[i] - tot_years[j])^2 )
-          Sigma[j,i] = Sigma[i,j]
-        }
-      }
-
-    }
-
-    Sigma11 = Sigma[one_ind,one_ind]
-    Sigma12 = Sigma[one_ind,two_ind]
-    Sigma22 = Sigma[two_ind,two_ind]
-    Sigma22_inv = solve(Sigma22)
-    Sigma21 = Sigma[two_ind,one_ind]
-
-    d_mat[n,k] = mu1 + Sigma12 %*% Sigma22_inv %*%(y - mu2)
-
-    if(n %% 50 ==0){
-      print(n)
-    }
-  }
-}
-#calc mc rank prob for each treatment
-gpbnma_rank_prob = matrix(0,nrow = K, ncol = K)
-for(n in 1:nrow(d_mat)){
-  temp = order(d_mat[n,],decreasing = TRUE)
-  for(i in 1:length(temp)){
-    gpbnma_rank_prob[temp[i],i] = gpbnma_rank_prob[temp[i],i] + 1
-  }
-}
-for(k in 1:K){
-  gpbnma_rank_prob[k,] = gpbnma_rank_prob[k,]/sum(gpbnma_rank_prob[k,])
-}
-#calc sucra for each treatment
-gpbnma_sucra = rep(0,K)
-for(k in 1:K){
-  for(i in 1:(K-1)){
-    gpbnma_sucra[k] = gpbnma_sucra[k] + sum(gpbnma_rank_prob[k,1:i])
-  }
-}
-bnma_gp_sucra = gpbnma_sucra/(K-1)
+# #extract mcmc chains
+# d_mat = matrix(0,nrow = nrow(jags_fit$BUGSoutput$sims.matrix), ncol = K)
+# #find each d_k^T (might be easier to do this in JAGS in future?)
+# for(k in 2:K){
+#   #find
+#   obs_x = years_kt[[k]]
+#   y = d_kt_list[[k]]
+#   pred_x =T
+#   mu1 = rep(post_d[k],length(pred_x))
+#   mu2 = rep(post_d[k],length(obs_x))
+#   one_ind = 1:length(pred_x)
+#   two_ind = (length(pred_x)+1):(length(pred_x) + length(obs_x))
+# 
+#   tot_years = c(pred_x,obs_x)
+# 
+#   phi_vec = jags_fit_time$BUGSoutput$sims.list$phi[,k]
+#   rho_vec = jags_fit_time$BUGSoutput$sims.list$rho[,k]
+#   psi_vec = jags_fit_time$BUGSoutput$sims.list$psi
+# 
+# 
+#   for(n in 1:nrow(d_mat)){
+# 
+#     #find covariance
+#     Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
+#     for(i in 1:nrow(Sigma)){
+# 
+#       if(i <= length(pred_x)){
+#         Sigma[i,i] = phi_vec[n]^2
+#       } else {
+#         Sigma[i,i] = psi_vec[n]^2 + phi_vec[n]^2
+#       }
+# 
+#       if(i < nrow(Sigma)){
+#         for(j in (i+1):ncol(Sigma)){
+#           Sigma[i,j] = phi_vec[n]^2*exp(-rho_vec[n]*(tot_years[i] - tot_years[j])^2 )
+#           Sigma[j,i] = Sigma[i,j]
+#         }
+#       }
+# 
+#     }
+# 
+#     Sigma11 = Sigma[one_ind,one_ind]
+#     Sigma12 = Sigma[one_ind,two_ind]
+#     Sigma22 = Sigma[two_ind,two_ind]
+#     Sigma22_inv = solve(Sigma22)
+#     Sigma21 = Sigma[two_ind,one_ind]
+# 
+#     d_mat[n,k] = mu1 + Sigma12 %*% Sigma22_inv %*%(y - mu2)
+# 
+#     if(n %% 50 ==0){
+#       print(n)
+#     }
+#   }
+# }
+# #calc mc rank prob for each treatment
+# gpbnma_rank_prob = matrix(0,nrow = K, ncol = K)
+# for(n in 1:nrow(d_mat)){
+#   temp = order(d_mat[n,],decreasing = TRUE)
+#   for(i in 1:length(temp)){
+#     gpbnma_rank_prob[temp[i],i] = gpbnma_rank_prob[temp[i],i] + 1
+#   }
+# }
+# for(k in 1:K){
+#   gpbnma_rank_prob[k,] = gpbnma_rank_prob[k,]/sum(gpbnma_rank_prob[k,])
+# }
+# #calc sucra for each treatment
+# gpbnma_sucra = rep(0,K)
+# for(k in 1:K){
+#   for(i in 1:(K-1)){
+#     gpbnma_sucra[k] = gpbnma_sucra[k] + sum(gpbnma_rank_prob[k,1:i])
+#   }
+# }
+# bnma_gp_sucra = gpbnma_sucra/(K-1)
 
 ############
 # Plots ?! #
