@@ -326,6 +326,12 @@ jags_fit_meta = R2jags::jags(data = jags_data,
 
 print(jags_fit_meta)
 
+b2 = jags_fit_meta$BUGSoutput$sims.list$b[,2]
+d2 = jags_fit_meta$BUGSoutput$sims.list$d[,2]
+
+mean(d2 + T*b2)
+quantile(d2 + T*b2,c(0.025,0.975))
+
 #calculate sucra
 
 #extract mcmc chains
@@ -639,21 +645,21 @@ post_sd = jags_fit_time$BUGSoutput$mean$sd
 #   plot_pred_high = c(plot_pred_high,pred_high)
 #   plot_k = c(plot_k,rep(treatments[k],length(pred_x)))
 # }
-
-df = data.frame("Years" = plot_years,
-                "Mean" = plot_pred_mu,
-                "Low" = plot_pred_low,
-                "High" = plot_pred_high,
-                "K" = as.factor(plot_k))
-
-ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
-  geom_line()
-
-ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
-  geom_line() +
-  facet_grid(~K) +
-  geom_ribbon(aes(ymin = Low, ymax = High),
-              alpha = 0.2, fill = "deepskyblue4")
+# 
+# df = data.frame("Years" = plot_years,
+#                 "Mean" = plot_pred_mu,
+#                 "Low" = plot_pred_low,
+#                 "High" = plot_pred_high,
+#                 "K" = as.factor(plot_k))
+# 
+# ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
+#   geom_line()
+# 
+# ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
+#   geom_line() +
+#   facet_grid(~K) +
+#   geom_ribbon(aes(ymin = Low, ymax = High),
+#               alpha = 0.2, fill = "deepskyblue4")
 
 
 d_kt_post = jags_fit_time$BUGSoutput$mean$d_kt
@@ -687,31 +693,31 @@ for(k in c(2,8,9,10,15)){
   obs_x = years_kt[[k]]
   y = d_kt_list[[k]]
   pred_x = 0:(10*T)/10
-  
+
   mu1 = rep(post_d[k],length(pred_x))
   mu2 = rep(post_d[k],length(obs_x))
-  
-  
+
+
   #find covariance
   tot_years = c(pred_x,obs_x)
   Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
   for(i in 1:nrow(Sigma)){
-    
+
     if(i <= length(pred_x)){
       Sigma[i,i] = post_phi[k]^2
     } else {
       Sigma[i,i] = post_psi^2 + post_phi[k]^2
     }
-    
+
     if(i < nrow(Sigma)){
       for(j in (i+1):ncol(Sigma)){
         Sigma[i,j] = post_phi[k]^2*exp(-post_rho[k]*(tot_years[i] - tot_years[j])^2 )
         Sigma[j,i] = Sigma[i,j]
       }
     }
-    
+
   }
-  
+
   one_ind = 1:length(pred_x)
   two_ind = (length(pred_x)+1):(length(pred_x) + length(obs_x))
   Sigma11 = Sigma[one_ind,one_ind]
@@ -719,13 +725,13 @@ for(k in c(2,8,9,10,15)){
   Sigma22 = Sigma[two_ind,two_ind]
   Sigma22_inv = solve(Sigma22)
   Sigma21 = Sigma[two_ind,one_ind]
-  
+
   pred_mu = mu1 + Sigma12 %*% Sigma22_inv %*%(y - mu2)
   pred_Sigma = Sigma11 - Sigma12 %*% Sigma22_inv %*% Sigma21
-  
+
   pred_low = pred_mu - 1.95 * sqrt(diag(pred_Sigma))
   pred_high = pred_mu + 1.95 * sqrt(diag(pred_Sigma))
-  
+
   plot_years = c(plot_years,first_year + pred_x)
   plot_pred_mu = c(plot_pred_mu,pred_mu)
   plot_pred_low = c(plot_pred_low,pred_low)
@@ -893,6 +899,9 @@ bnma_gp_sucra = gpbnma_sucra/(K-1)
 greater_than_zero = function(x){
   return(sum((x>0))/length(x))
 }
+
+temp = jags_fit_meta$BUGSoutput$sims.list$b
+apply(temp,2,greater_than_zero)
 
 #####
 # Mean and CI
