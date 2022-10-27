@@ -347,7 +347,7 @@ bnma_meta_sucra = bnma_meta_sucra/(K-1)
 # BNMA Sigmoidal #
 ##################
 
-
+pi = 0.1
 m_mu = 0
 prec_mu = 1
 
@@ -357,7 +357,7 @@ jags_data <- list("I","n_ik","y_ik",
                   "K",
                   "short_year_ki",
                   "tsize","TS",
-                  "lts_ind", "T")
+                  "lts_ind", "T", "pi")
 
 #note which params to save
 jags_params <- c("z_k","d",
@@ -372,7 +372,7 @@ jags_inits <- function(){
 }
 
 dir = getwd()
-jags_file = paste0(dir,"/jags/BNMA_Like_Bin_Trial_Multi_Arm_Time_Sigmoidal.bug")
+jags_file = paste0(dir,"/jags/BNMA_Like_Bin_Trial_Multi_Arm_Time_Sigmoidal_Z.bug")
 
 #fit model
 
@@ -521,7 +521,7 @@ jags_inits <- function(){
 }
 
 dir = getwd()
-jags_file = paste0(dir,"/jags/BNMA_Like_Bin_Trial_Multi_Arm_Time_GP.bug")
+jags_file = paste0(dir,"/jags/BNMA_Like_Bin_Trial_Multi_Arm_Time_GP_Z.bug")
 
 #fit model
 jags_fit_time <- R2jags::jags(data = jags_data,
@@ -771,6 +771,12 @@ greater_than_zero = function(x){
   return(sum((x>0))/length(x))
 }
 
+temp = jags_fit_meta$BUGSoutput$sims.list$b
+apply(temp,2,greater_than_zero)
+
+#####
+# Mean and CI
+
 post_prob =NULL
 model = NULL
 treatment = NULL
@@ -823,7 +829,6 @@ model = c(model,rep("GP-BNMA",length(temp)))
 treatment = c(treatment,treatment_map$Treatment)
 line = c(line,rep(0,length(temp)))
 
-
 df = data.frame(Probability = post_prob,
                 Mean = post_mean,
                 Low = low_bound,
@@ -832,18 +837,17 @@ df = data.frame(Probability = post_prob,
                 Model = as.factor(model),
                 Line = line)
 
-ggplot(data = df, aes(x = Treatment, y = Probability, fill = Model)) +
-  geom_bar(stat = "identity", position = "dodge") + 
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-
 ggplot(df) + 
-  geom_errorbar(aes(x = Treatment, y = Mean, ymin=Low, ymax=Up, color = Model),
+  geom_errorbar(aes(x = Model, y = Mean, ymin=Low, ymax=Up, color = Model),
                 position = position_dodge(0.75),
                 size = 1.5) +
-  geom_point( aes(x = Treatment, y = Mean, color = Model), 
+  geom_point( aes(x = Model, y = Mean, color = Model), 
               position = position_dodge(0.75), 
               size = 3, shape = 21, fill = "white") +
-  coord_flip() +
-  xlab("Treatment") + 
-  ylab("Treatment Effect")
-
+  facet_wrap(~Treatment) + 
+  coord_flip() + 
+  xlab("Model") + 
+  ylab("Treatment Effect") + 
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=16,face="bold"),
+        legend.position = "none")
