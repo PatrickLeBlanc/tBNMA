@@ -94,27 +94,23 @@ g2 = graph_from_data_frame(d = uniq_treat_mat, directed = FALSE)
 node_vec = unique(as.vector(uniq_treat_mat))
 size_vec = rep(0,length(node_vec))
 for(i in 1:length(node_vec)){
-  size_vec[i] = 5*sum(treat_mat == node_vec[i])^(1/3)
+  size_vec[i] = 7*sum(treat_mat == node_vec[i])^(1/3)
 }
 V(g2)$size = size_vec
 E(g2)$weight = c(13,4,2,3,2,6,4,4,2,4,2,
                  1,1,1,1,1,1,5,1,1,
                  1,2)
 l = layout.circle(g2)
-radian.rescale <- function(x, start=0, direction=1) {
-  c.rotate <- function(x) (x + start) %% (2 * pi) * direction
-  c.rotate(scales::rescale(x, c(0, 2 * pi), range(x)))
-}
-lab.locs <- radian.rescale(x=1:max(node_vec), direction=-1, start=0)
+l = layout.fruchterman.reingold(g2)
+l = layout.davidson.harel(g2)
 plot(g2, 
      layout = l,
      vertex.label = treatment_map$Treatment[node_vec],
-     # vertex.label.degree=lab.locs,
-     vertex.label.dist = c(0,0,1.5,1.5,
-                           1.5,1.5,-1.5,-1.5,
+     vertex.label.dist = c(0,0,2,-1.5,
+                           1.75,1.5,1.5,-1.5,
+                           -1.5,-1.5,1.75,1.75,
                            -1.5,-1.5,-1.5,-1.5,
-                           -1.5,-1.5,-1.5,-1.5,
-                           -1.5,-1.5,1.5),
+                           -1.5,1.75,-1.5),
      vertex.label.color = "blue",
      vertex.color = "aquamarine",
      edge.color = "black",
