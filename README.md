@@ -36,6 +36,21 @@ All of the jags scripts for various versions of BNMA models are included.  The f
 * `BNMA_Like_Bin_Trial_Multi_Arm_Time_Sigmoidal_Z.bug`: an implemenation of Sig-BNMA for binomial likelihoods, multiple treatment arms, and with time effects only on those treatments with at least $5$ appearences in the dataset.
 * `BNMA_Like_Bin_Trial_Multi_Arm_Time_GP_Z.bug`: an implemenation of GP-BNMA for binomial likelihoods, multiple treatment arms, and with time effects only on those treatments with at least $5$ appearences in the dataset.
 
+# Scripts
+
+In addition to the directories, there are three scripts located in the main repository which reproduce the results in the paper.
+
+## `Simulate_BNMA_Bin_MultiArm.R`
+
+This script uses the networks, timepoints, comparisons, and study sizes from the agglomerate dataset to simulate a standard BNMA dataset with no time-varying effects.  The four methods (BNMA, Meta-BNMA, Sig-BNMA, and GP-BNMA) are run on this dataset.  Plots of results are produced.
+
+## `Simulate_BNMA_Bin_MultiArm_Sigmoidal.R`
+
+This script uses the networks, timepoints, comparisons, and study sizes from the agglomerate dataset to simulate a Sig-BNMA dataset with time-varying effects on linezolid.  The four methods (BNMA, Meta-BNMA, Sig-BNMA, and GP-BNMA) are run on this dataset.  Plots of results are produced.
+
+## `Data_Analysis.R`
+
+The four methods (BNMA, Meta-BNMA, Sig-BNMA, and GP-BNMA) are run on the agglomerated dataset.  Plots of results are produced.
 
 # References
 
