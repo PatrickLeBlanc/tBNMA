@@ -685,6 +685,11 @@ ggplot(data = df, aes(x = Years, y = Mean, group = K, color = K)) +
   geom_ribbon(aes(ymin = Low, ymax = High),
               alpha = 0.2, fill = "deepskyblue4")
 
+for(k in unique(df$K)){
+  print(k)
+  print( max(df$Low[df$K == k]) - min(df$High[df$K == k]))
+}
+
 #extract mcmc chains
 d_mat = matrix(0,nrow = nrow(jags_fit$BUGSoutput$sims.matrix), ncol = K)
 #find each d_k^T (might be easier to do this in JAGS in future?)
