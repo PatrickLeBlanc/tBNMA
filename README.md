@@ -55,10 +55,11 @@ The four methods (BNMA, Meta-BNMA, Sig-BNMA, and GP-BNMA) are run on the agglome
 # References
 
 * Brown, N., Goodman, A., Horner, C., Jenkins, A. and Brown, E. (2021), ‘Treatment of methicillin-resistant staphylococcus aureus (mrsa): updated guidelines from the uk’, JAC- Antimicrobial Resistance 3
+* Diekema, D. J., Pfaller, M. A., Shortridge, D., Zervos, M. and Jones, R. N. (2019), ‘Twenty-year trends in antimicrobial susceptibilities among staphylococcus aureus from the sentry antimicrobial surveillance program’, Open Forum Infectious Diseases 6(Supplement 1), S47–S53.
 * Guest, J., Esteban, J., Manganelli, A., Novelli, A., Rizzardini, G. and Serra-Burriel, M. (2017), 20 ‘Comparative efficacy and safety of antibiotics used to treat acute bacterial skin and skin structure infections: Results of a network meta-analysis’, PLOS ONE 12, e0187792
 * Feng, J., Xiang, F., Cheng, J., Gou, Y. and Li, J. (2021), ‘Comparative efficacy and safety of vancomycin, linezolid, tedizolid, and daptomycin in treating patients with suspected or proven complicated skin and soft tissue infections: An updated network meta-analysis’, Infectious Diseases and Therapy 10.
 * Lan, S.-H., Lin, W.-T., Chang, S.-P., Lu, L.-C., Chao, C.-M., Lai, C.-C. and Wang, J.-H.(2019), ‘Tedizolid versus linezolid for the treatment of acute bacterial skin and skin structure infection: A systematic review and meta-analysis’, Antibiotics 8, 137
-* LeBlanc and Banks.  Time-Varying Bayesian Meta-Analysis.  2022.  
+* LeBlanc and Banks.  Time-Varying Bayesian Meta-Analysis.  2022. 
 *Li, Y. and Xu, W. (2018), ‘Efficacy and safety of linezolid compared with other treatments for skin and soft tissue infections: A meta-analysis’, Bioscience Reports 38, BSR20171125
 * Liu, C., Mao, Z., Yang, M., Kang, H., Liu, H., Pan, L., Hu, J., Luo, J. and Zhou, F. (2016), ‘Efficacy and safety of daptomycin for skin and soft tissue infections: A systematic review with trial sequential analysis’, Therapeutics and Clinical Risk Management Volume 12, 1455–1466.
 * Mccool, R., Eales, J., Barata, T., Arber, M., Cikalo, M., Fleetwood, K., Glanville, J., Gould,I. and Kauf, T. (2017), ‘Pin17. systematic review and network meta-analysis of tedizolid for the treatment of acute bacterial skin and skin structure infection (absssi) due to methicillin-resistant staphylococcus aureus (mrsa)’, Value in Health 18, A231
