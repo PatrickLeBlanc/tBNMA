@@ -46,7 +46,7 @@ treatments = 1:K
 treatment_map = data.frame("Number" = treatments,
                            "Treatment" = unique(dat$Treatment))
 
-# #make lin 1 and van 2
+# # #make lin 1 and van 2
 # treatment_map$Treatment[1] = "LIN"
 # treatment_map$Treatment[2] = "VAN"
 
@@ -609,8 +609,8 @@ for(k in c(2,8,9,10,15)){
   obs_x = years_kt[[k]]
   y = d_kt_list[[k]]
   pred_x = 0:(10*T)/10
-  mu1 = rep(post_d[k],length(pred_x))
-  mu2 = rep(post_d[k],length(obs_x))
+  # mu1 = rep(post_d[k],length(pred_x))
+  # mu2 = rep(post_d[k],length(obs_x))
   one_ind = 1:length(pred_x)
   two_ind = (length(pred_x)+1):(length(pred_x) + length(obs_x))
 
@@ -619,9 +619,13 @@ for(k in c(2,8,9,10,15)){
   phi_vec = jags_fit_time$BUGSoutput$sims.list$phi[,k]
   rho_vec = jags_fit_time$BUGSoutput$sims.list$rho[,k]
   psi_vec = jags_fit_time$BUGSoutput$sims.list$psi
+  d_vec = jags_fit_time$BUGSoutput$sims.list$d[,k]
 
   out_ntk = array(0,dim = c(length(psi_vec),length(pred_x),K))
   for(n in 1:nrow(d_mat)){
+    #find mean
+    mu1 = rep(d_vec[n],length(pred_x))
+    mu2 = rep(d_vec[n],length(obs_x))
 
     #find covariance
     Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
