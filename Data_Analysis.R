@@ -22,6 +22,19 @@ mean(dat$Year[dat$Treatment == "VAN"])
 mean(dat$Year[dat$Treatment == "LIN"])
 #distributions of these are about the same
 
+# #get rid of all non-LIN/VAN treatments
+# dat = dat[dat$Treatment == "VAN" | dat$Treatment == "LIN",]
+# remove = NULL
+# for(i in 1:nrow(dat)){
+#   if(dat$Study[i] %in% dat$Study[-i]){
+#     
+#   } else{
+#     remove = c(remove,i)
+#   }
+# }
+# dat = dat[-remove,]
+
+
 ########
 # make data structures
 
@@ -32,7 +45,11 @@ K = length(table(dat$Treatment))
 
 #find years in which the studies took place
 #normalize so that the first year is 0
-years = dat$Year[2*1:I]
+years = NULL
+for(i in 1:length(uniq_studies)){
+  temp_dat = dat[dat$Study == uniq_studies[i],]
+  years = c(years,temp_dat$Year[1])
+}
 first_year = min(years)
 years = years - first_year
 T = max(years)
@@ -42,79 +59,86 @@ hist(years) #these appear decently well spread out
 studies = 1:I
 treatments = 1:K
 
+#make map between study number and study
+study_map = data.frame("Number" = studies,
+                       "Study" = uniq_studies)
+
 #make map between treatment number and treatmetns
 treatment_map = data.frame("Number" = treatments,
                            "Treatment" = unique(dat$Treatment))
-
-# # #make lin 1 and van 2
+# 
+# #make lin 1 and van 2
 # treatment_map$Treatment[1] = "LIN"
 # treatment_map$Treatment[2] = "VAN"
 
-#find num_treat
+#find num_treat - number of arms in each study
 num_treat = rep(0,I)
 for(i in 1:I){
-  temp_dat = dat[which(dat$Study == uniq_studies[i]),]
+  temp_dat = dat[which(dat$Study == study_map$Study[i]),]
   num_treat[i] = nrow(temp_dat)
 }
 
-#find treatment matrix and num_treat
+#find treatment matrix
+#t_mat is three columns, one for each treamtent arm (blanks are 0)
+#indicator for which treatment is in whcih arm
 t_mat = matrix(0,nrow = I, ncol = max(num_treat))
 for(i in 1:I){
   
-  temp_dat = dat[which(dat$Study == uniq_studies[i]),]
-
+  temp_dat = dat[which(dat$Study == study_map$Study[i]),]
+  
   for(j in 1:num_treat[i]){
     t_mat[i,j] = which(treatment_map$Treatment == temp_dat$Treatment[j])
   }
   #want lower numbered treatments first
   t_mat[i,1:num_treat[i]] = sort(t_mat[i,1:num_treat[i]])
 }
-
-#EDA - generate list of all treatment comparisons
-treat_mat = NULL
-for(i in 1:nrow(t_mat)){
-  treat_mat = cbind(treat_mat,combn(t_mat[i,1:num_treat[i]],2))
-}
-treat_mat = t(treat_mat)  
-
-#change order to numeric
-treat_mat = treat_mat[order(treat_mat[,1]),]
-for(i in unique(treat_mat[,1])){
-  if(length(which(treat_mat[,1] == i))>1){
-    temp_treat = treat_mat[which(treat_mat[,1] == i),]
-    temp_treat[order(temp_treat[,2]),]
-    treat_mat[which(treat_mat[,1] == i),] = temp_treat
-  }
-}
-
-uniq_treat_mat = unique(treat_mat)
-uniq_treat_mat = uniq_treat_mat[1:22,]
-
-g2 = graph_from_data_frame(d = uniq_treat_mat, directed = FALSE)
-node_vec = unique(as.vector(uniq_treat_mat))
-size_vec = rep(0,length(node_vec))
-for(i in 1:length(node_vec)){
-  size_vec[i] = 7*sum(treat_mat == node_vec[i])^(1/3)
-}
-V(g2)$size = size_vec
-E(g2)$weight = c(13,4,2,3,2,6,4,4,2,4,2,
-                 1,1,1,1,1,1,5,1,1,
-                 1,2)
-l = layout.circle(g2)
-l = layout.fruchterman.reingold(g2)
-l = layout.davidson.harel(g2)
-plot(g2, 
-     layout = l,
-     vertex.label = treatment_map$Treatment[node_vec],
-     vertex.label.dist = c(0,0,2,-1.5,
-                           1.75,1.5,1.5,-1.5,
-                           -1.5,-1.5,1.75,1.75,
-                           -1.5,-1.5,-1.5,-1.5,
-                           -1.5,1.75,-1.5),
-     vertex.label.color = "blue",
-     vertex.color = "aquamarine",
-     edge.color = "black",
-     edge.width = E(g2)$weight)
+# 
+# #EDA - generate list of all treatment comparisons
+# #all basically make t_mat into list of pairwise comparisons
+# treat_mat = NULL
+# for(i in 1:nrow(t_mat)){
+#   treat_mat = cbind(treat_mat,combn(t_mat[i,1:num_treat[i]],2))
+# }
+# treat_mat = t(treat_mat)  
+# 
+# #change order to numeric
+# treat_mat = treat_mat[order(treat_mat[,1]),]
+# for(i in unique(treat_mat[,1])){
+#   if(length(which(treat_mat[,1] == i))>1){
+#     temp_treat = treat_mat[which(treat_mat[,1] == i),]
+#     temp_treat[order(temp_treat[,2]),]
+#     treat_mat[which(treat_mat[,1] == i),] = temp_treat
+#   }
+# }
+# 
+# uniq_treat_mat = unique(treat_mat)
+# uniq_treat_mat = uniq_treat_mat[1:22,]
+# 
+# g2 = graph_from_data_frame(d = uniq_treat_mat, directed = FALSE)
+# node_vec = unique(as.vector(uniq_treat_mat))
+# size_vec = rep(0,length(node_vec))
+# for(i in 1:length(node_vec)){
+#   size_vec[i] = 7*sum(treat_mat == node_vec[i])^(1/3)
+# }
+# V(g2)$size = size_vec
+# E(g2)$weight = c(13,4,2,3,2,6,4,4,2,4,2,
+#                  1,1,1,1,1,1,5,1,1,
+#                  1,2)
+# l = layout.circle(g2)
+# l = layout.fruchterman.reingold(g2)
+# l = layout.davidson.harel(g2)
+# plot(g2, 
+#      layout = l,
+#      vertex.label = treatment_map$Treatment[node_vec],
+#      vertex.label.dist = c(0,0,2,-1.5,
+#                            1.75,1.5,1.5,-1.5,
+#                            -1.5,-1.5,1.75,1.75,
+#                            -1.5,-1.5,-1.5,-1.5,
+#                            -1.5,1.75,-1.5),
+#      vertex.label.color = "blue",
+#      vertex.color = "aquamarine",
+#      edge.color = "black",
+#      edge.width = E(g2)$weight)
 #make time structures
 
 #find how many datapoints for each treatment
@@ -130,6 +154,7 @@ for(k in 1:K){
 TS = max(tsize)
 
 #which years each study appears, indexed by which study they appear in
+#treatments are rows, columns are studies
 long_year_ki = matrix(NA,nrow = K, ncol = I)
 for(k in 1:K){
   for(i in 1:I){
@@ -139,6 +164,8 @@ for(k in 1:K){
   }
 }
 
+#short_year_ki[k,1:tsize[k]] returns a list indicating the indices i
+#of all studies where treatment k is from
 short_year_ki = matrix(NA,nrow = K, ncol = max(tsize))
 for(k in 1:K){
   temp = long_year_ki[k,]
@@ -149,6 +176,10 @@ for(k in 1:K){
 }
 
 #need a map leading from study to short index for each treatment
+#lts_ind[k,i], for k in 1:K and i in 1:I, returns an index
+# which will map to the short_year_ki format
+#that is, we take an index on the space of all studies, and map to an index
+# on the space only of studies involving treatment k
 lts_ind = matrix(NA,nrow = K, ncol = I)
 for(k in 1:K){
   sum = 0
