@@ -50,7 +50,6 @@ for(i in 1:length(uniq_studies)){
   temp_dat = dat[dat$Study == uniq_studies[i],]
   years = c(years,temp_dat$Year[1])
 }
-years = unique(dat$Year)
 first_year = min(years)
 years = years - first_year
 T = max(years)
@@ -67,10 +66,10 @@ study_map = data.frame("Number" = studies,
 #make map between treatment number and treatmetns
 treatment_map = data.frame("Number" = treatments,
                            "Treatment" = unique(dat$Treatment))
-# 
-# #make lin 1 and van 2
-# treatment_map$Treatment[1] = "LIN"
-# treatment_map$Treatment[2] = "VAN"
+
+#make lin 1 and van 2
+treatment_map$Treatment[1] = "LIN"
+treatment_map$Treatment[2] = "VAN"
 
 #find num_treat - number of arms in each study
 num_treat = rep(0,I)
@@ -195,12 +194,22 @@ for(k in 1:K){
 #find how many trials/success in each study/arm
 n_ik = matrix(0,nrow = I, ncol = max(num_treat))
 y_ik = matrix(0,nrow = I, ncol = max(num_treat))
-count = 1
 for(i in 1:I){
+  study = study_map$Study[i]
+  temp_dat = dat[dat$Study == study,]
   for(j in 1:num_treat[i]){
-    n_ik[i,j] = dat$Trials[count]
-    y_ik[i,j] = dat$Success[count]
-    count = count + 1
+    #find the treatment at hand
+    treat = temp_dat$Treatment[j]
+    
+    #find numeric label for treat
+    treat_label = which(treatment_map$Treatment == treat)
+
+    #find out which treatment arm this treatment should belong to
+    treat_ind = which(t_mat[i,] == treat_label)
+
+    #update trials/successes
+    n_ik[i,treat_ind] = temp_dat$Trials[j]
+    y_ik[i,treat_ind] = temp_dat$Success[j]
   }
 }
 

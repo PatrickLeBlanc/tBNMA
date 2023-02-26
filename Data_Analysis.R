@@ -22,19 +22,6 @@ mean(dat$Year[dat$Treatment == "VAN"])
 mean(dat$Year[dat$Treatment == "LIN"])
 #distributions of these are about the same
 
-# #get rid of all non-LIN/VAN treatments
-# dat = dat[dat$Treatment == "VAN" | dat$Treatment == "LIN",]
-# remove = NULL
-# for(i in 1:nrow(dat)){
-#   if(dat$Study[i] %in% dat$Study[-i]){
-#     
-#   } else{
-#     remove = c(remove,i)
-#   }
-# }
-# dat = dat[-remove,]
-
-
 ########
 # make data structures
 
@@ -66,7 +53,7 @@ study_map = data.frame("Number" = studies,
 #make map between treatment number and treatmetns
 treatment_map = data.frame("Number" = treatments,
                            "Treatment" = unique(dat$Treatment))
-# 
+
 # #make lin 1 and van 2
 # treatment_map$Treatment[1] = "LIN"
 # treatment_map$Treatment[2] = "VAN"
@@ -194,12 +181,22 @@ for(k in 1:K){
 #find how many trials/success in each study/arm
 n_ik = matrix(0,nrow = I, ncol = max(num_treat))
 y_ik = matrix(0,nrow = I, ncol = max(num_treat))
-count = 1
 for(i in 1:I){
+  study = study_map$Study[i]
+  temp_dat = dat[dat$Study == study,]
   for(j in 1:num_treat[i]){
-    n_ik[i,j] = dat$Trials[count]
-    y_ik[i,j] = dat$Success[count]
-    count = count + 1
+    #find the treatment at hand
+    treat = temp_dat$Treatment[j]
+    
+    #find numeric label for treat
+    treat_label = which(treatment_map$Treatment == treat)
+    
+    #find out which treatment arm this treatment should belong to
+    treat_ind = which(t_mat[i,] == treat_label)
+    
+    #update trials/successes
+    n_ik[i,treat_ind] = temp_dat$Trials[j]
+    y_ik[i,treat_ind] = temp_dat$Success[j]
   }
 }
 
@@ -588,118 +585,118 @@ plot_pred_high = NULL
 plot_k = NULL
 
 for(k in c(2,8,9,10,15)){
-  obs_x = years_kt[[k]]
-  y = d_kt_list[[k]]
-  pred_x = 0:(10*T)/10
-
-  mu1 = rep(post_d[k],length(pred_x))
-  mu2 = rep(post_d[k],length(obs_x))
-
-
-  #find covariance
-  tot_years = c(pred_x,obs_x)
-  Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
-  for(i in 1:nrow(Sigma)){
-
-    if(i <= length(pred_x)){
-      Sigma[i,i] = post_phi[k]^2
-    } else {
-      Sigma[i,i] = post_psi^2 + post_phi[k]^2
-    }
-
-    if(i < nrow(Sigma)){
-      for(j in (i+1):ncol(Sigma)){
-        Sigma[i,j] = post_phi[k]^2*exp(-post_rho[k]*(tot_years[i] - tot_years[j])^2 )
-        Sigma[j,i] = Sigma[i,j]
-      }
-    }
-
-  }
-
-  one_ind = 1:length(pred_x)
-  two_ind = (length(pred_x)+1):(length(pred_x) + length(obs_x))
-  Sigma11 = Sigma[one_ind,one_ind]
-  Sigma12 = Sigma[one_ind,two_ind]
-  Sigma22 = Sigma[two_ind,two_ind]
-  Sigma22_inv = solve(Sigma22)
-  Sigma21 = Sigma[two_ind,one_ind]
-
-  pred_mu = mu1 + Sigma12 %*% Sigma22_inv %*%(y - mu2)
-  pred_Sigma = Sigma11 - Sigma12 %*% Sigma22_inv %*% Sigma21
-
-  pred_low = pred_mu - 1.95 * sqrt(diag(pred_Sigma))
-  pred_high = pred_mu + 1.95 * sqrt(diag(pred_Sigma))
-
-  plot_years = c(plot_years,first_year + pred_x)
-  plot_pred_mu = c(plot_pred_mu,pred_mu)
-  plot_pred_low = c(plot_pred_low,pred_low)
-  plot_pred_high = c(plot_pred_high,pred_high)
-  plot_k = c(plot_k,rep(treatment_map$Treatment[k],length(pred_x)))
-
-  # #find
   # obs_x = years_kt[[k]]
   # y = d_kt_list[[k]]
   # pred_x = 0:(10*T)/10
-  # # mu1 = rep(post_d[k],length(pred_x))
-  # # mu2 = rep(post_d[k],length(obs_x))
-  # one_ind = 1:length(pred_x)
-  # two_ind = (length(pred_x)+1):(length(pred_x) + length(obs_x))
   # 
+  # mu1 = rep(post_d[k],length(pred_x))
+  # mu2 = rep(post_d[k],length(obs_x))
+  # 
+  # 
+  # #find covariance
   # tot_years = c(pred_x,obs_x)
+  # Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
+  # for(i in 1:nrow(Sigma)){
   # 
-  # phi_vec = jags_fit_time$BUGSoutput$sims.list$phi[,k]
-  # rho_vec = jags_fit_time$BUGSoutput$sims.list$rho[,k]
-  # psi_vec = jags_fit_time$BUGSoutput$sims.list$psi
-  # d_vec = jags_fit_time$BUGSoutput$sims.list$d[,k]
-  # 
-  # out_ntk = array(0,dim = c(length(psi_vec),length(pred_x),K))
-  # for(n in 1:nrow(d_mat)){
-  #   #find mean
-  #   mu1 = rep(d_vec[n],length(pred_x))
-  #   mu2 = rep(d_vec[n],length(obs_x))
-  # 
-  #   #find covariance
-  #   Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
-  #   for(i in 1:nrow(Sigma)){
-  # 
-  #     if(i <= length(pred_x)){
-  #       Sigma[i,i] = phi_vec[n]^2
-  #     } else {
-  #       Sigma[i,i] = psi_vec[n]^2 + phi_vec[n]^2
-  #     }
-  # 
-  #     if(i < nrow(Sigma)){
-  #       for(j in (i+1):ncol(Sigma)){
-  #         Sigma[i,j] = phi_vec[n]^2*exp(-rho_vec[n]*(tot_years[i] - tot_years[j])^2 )
-  #         Sigma[j,i] = Sigma[i,j]
-  #       }
-  #     }
-  # 
+  #   if(i <= length(pred_x)){
+  #     Sigma[i,i] = post_phi[k]^2
+  #   } else {
+  #     Sigma[i,i] = post_psi^2 + post_phi[k]^2
   #   }
   # 
-  #   Sigma11 = Sigma[one_ind,one_ind]
-  #   Sigma12 = Sigma[one_ind,two_ind]
-  #   Sigma22 = Sigma[two_ind,two_ind]
-  #   Sigma22_inv = solve(Sigma22)
-  #   Sigma21 = Sigma[two_ind,one_ind]
-  # 
-  #   out_ntk[n,,k] = mu1 + Sigma12 %*% Sigma22_inv %*%(y - mu2)
-  # 
-  #   if(n %% 50 ==0){
-  #     print(n)
+  #   if(i < nrow(Sigma)){
+  #     for(j in (i+1):ncol(Sigma)){
+  #       Sigma[i,j] = post_phi[k]^2*exp(-post_rho[k]*(tot_years[i] - tot_years[j])^2 )
+  #       Sigma[j,i] = Sigma[i,j]
+  #     }
   #   }
+  # 
   # }
   # 
-  # pred_mu = apply(out_ntk[,,k],2,mean)
-  # quant_mat = apply(out_ntk[,,k],2,find_quant)
-  # pred_low = quant_mat[1,]
-  # pred_high = quant_mat[2,]
+  # one_ind = 1:length(pred_x)
+  # two_ind = (length(pred_x)+1):(length(pred_x) + length(obs_x))
+  # Sigma11 = Sigma[one_ind,one_ind]
+  # Sigma12 = Sigma[one_ind,two_ind]
+  # Sigma22 = Sigma[two_ind,two_ind]
+  # Sigma22_inv = solve(Sigma22)
+  # Sigma21 = Sigma[two_ind,one_ind]
+  # 
+  # pred_mu = mu1 + Sigma12 %*% Sigma22_inv %*%(y - mu2)
+  # pred_Sigma = Sigma11 - Sigma12 %*% Sigma22_inv %*% Sigma21
+  # 
+  # pred_low = pred_mu - 1.95 * sqrt(diag(pred_Sigma))
+  # pred_high = pred_mu + 1.95 * sqrt(diag(pred_Sigma))
   # 
   # plot_years = c(plot_years,first_year + pred_x)
   # plot_pred_mu = c(plot_pred_mu,pred_mu)
   # plot_pred_low = c(plot_pred_low,pred_low)
   # plot_pred_high = c(plot_pred_high,pred_high)
   # plot_k = c(plot_k,rep(treatment_map$Treatment[k],length(pred_x)))
+
+  #find
+  obs_x = years_kt[[k]]
+  y = d_kt_list[[k]]
+  pred_x = 0:(10*T)/10
+  # mu1 = rep(post_d[k],length(pred_x))
+  # mu2 = rep(post_d[k],length(obs_x))
+  one_ind = 1:length(pred_x)
+  two_ind = (length(pred_x)+1):(length(pred_x) + length(obs_x))
+
+  tot_years = c(pred_x,obs_x)
+
+  phi_vec = jags_fit_time$BUGSoutput$sims.list$phi[,k]
+  rho_vec = jags_fit_time$BUGSoutput$sims.list$rho[,k]
+  psi_vec = jags_fit_time$BUGSoutput$sims.list$psi
+  d_vec = jags_fit_time$BUGSoutput$sims.list$d[,k]
+
+  out_ntk = array(0,dim = c(length(psi_vec),length(pred_x),K))
+  for(n in 1:nrow(d_mat)){
+    #find mean
+    mu1 = rep(d_vec[n],length(pred_x))
+    mu2 = rep(d_vec[n],length(obs_x))
+
+    #find covariance
+    Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
+    for(i in 1:nrow(Sigma)){
+
+      if(i <= length(pred_x)){
+        Sigma[i,i] = phi_vec[n]^2
+      } else {
+        Sigma[i,i] = psi_vec[n]^2 + phi_vec[n]^2
+      }
+
+      if(i < nrow(Sigma)){
+        for(j in (i+1):ncol(Sigma)){
+          Sigma[i,j] = phi_vec[n]^2*exp(-rho_vec[n]*(tot_years[i] - tot_years[j])^2 )
+          Sigma[j,i] = Sigma[i,j]
+        }
+      }
+
+    }
+
+    Sigma11 = Sigma[one_ind,one_ind]
+    Sigma12 = Sigma[one_ind,two_ind]
+    Sigma22 = Sigma[two_ind,two_ind]
+    Sigma22_inv = solve(Sigma22)
+    Sigma21 = Sigma[two_ind,one_ind]
+
+    out_ntk[n,,k] = mu1 + Sigma12 %*% Sigma22_inv %*%(y - mu2)
+
+    if(n %% 50 ==0){
+      print(n)
+    }
+  }
+
+  pred_mu = apply(out_ntk[,,k],2,mean)
+  quant_mat = apply(out_ntk[,,k],2,find_quant)
+  pred_low = quant_mat[1,]
+  pred_high = quant_mat[2,]
+
+  plot_years = c(plot_years,first_year + pred_x)
+  plot_pred_mu = c(plot_pred_mu,pred_mu)
+  plot_pred_low = c(plot_pred_low,pred_low)
+  plot_pred_high = c(plot_pred_high,pred_high)
+  plot_k = c(plot_k,rep(treatment_map$Treatment[k],length(pred_x)))
 
 }
 
