@@ -47,7 +47,7 @@ for(i in 1:I){
 }
 
 
-set.seed(1234)
+set.seed(1)
 # 
 # #set parameters
 # I = 58
