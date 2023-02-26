@@ -54,9 +54,9 @@ study_map = data.frame("Number" = studies,
 treatment_map = data.frame("Number" = treatments,
                            "Treatment" = unique(dat$Treatment))
 
-# #make lin 1 and van 2
-# treatment_map$Treatment[1] = "LIN"
-# treatment_map$Treatment[2] = "VAN"
+#make lin 1 and van 2
+treatment_map$Treatment[1] = "LIN"
+treatment_map$Treatment[2] = "VAN"
 
 #find num_treat - number of arms in each study
 num_treat = rep(0,I)
@@ -597,20 +597,20 @@ for(k in c(2,8,9,10,15)){
   # tot_years = c(pred_x,obs_x)
   # Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
   # for(i in 1:nrow(Sigma)){
-  # 
+  #   
   #   if(i <= length(pred_x)){
   #     Sigma[i,i] = post_phi[k]^2
   #   } else {
   #     Sigma[i,i] = post_psi^2 + post_phi[k]^2
   #   }
-  # 
+  #   
   #   if(i < nrow(Sigma)){
   #     for(j in (i+1):ncol(Sigma)){
-  #       Sigma[i,j] = post_phi[k]^2*exp(-post_rho[k]*(tot_years[i] - tot_years[j])^2 )
+  #       Sigma[i,j] = post_phi[k]^2*exp(-post_rho[k]*abs(tot_years[i] - tot_years[j]) )
   #       Sigma[j,i] = Sigma[i,j]
   #     }
   #   }
-  # 
+  #   
   # }
   # 
   # one_ind = 1:length(pred_x)
@@ -632,7 +632,7 @@ for(k in c(2,8,9,10,15)){
   # plot_pred_low = c(plot_pred_low,pred_low)
   # plot_pred_high = c(plot_pred_high,pred_high)
   # plot_k = c(plot_k,rep(treatment_map$Treatment[k],length(pred_x)))
-
+  
   #find
   obs_x = years_kt[[k]]
   y = d_kt_list[[k]]
@@ -647,7 +647,9 @@ for(k in c(2,8,9,10,15)){
   phi_vec = jags_fit_time$BUGSoutput$sims.list$phi[,k]
   rho_vec = jags_fit_time$BUGSoutput$sims.list$rho[,k]
   psi_vec = jags_fit_time$BUGSoutput$sims.list$psi
-  d_vec = jags_fit_time$BUGSoutput$sims.list$d[,k]
+  sb_vec = jags_fit_time$BUGSoutput$sims.list$sb[,k]
+  sl_vec = jags_fit_time$BUGSoutput$sims.list$sl[,k]
+  d_vec =  jags_fit_time$BUGSoutput$sims.list$d[,k]
 
   out_ntk = array(0,dim = c(length(psi_vec),length(pred_x),K))
   for(n in 1:nrow(d_mat)){
@@ -660,14 +662,14 @@ for(k in c(2,8,9,10,15)){
     for(i in 1:nrow(Sigma)){
 
       if(i <= length(pred_x)){
-        Sigma[i,i] = phi_vec[n]^2
+        Sigma[i,i] = phi_vec[n]^2 
       } else {
         Sigma[i,i] = psi_vec[n]^2 + phi_vec[n]^2
       }
 
       if(i < nrow(Sigma)){
         for(j in (i+1):ncol(Sigma)){
-          Sigma[i,j] = phi_vec[n]^2*exp(-rho_vec[n]*(tot_years[i] - tot_years[j])^2 )
+          Sigma[i,j] = phi_vec[n]^2*exp(-rho_vec[n]*abs(tot_years[i] - tot_years[j]))
           Sigma[j,i] = Sigma[i,j]
         }
       }

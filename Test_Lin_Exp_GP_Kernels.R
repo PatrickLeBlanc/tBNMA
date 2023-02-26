@@ -21,18 +21,18 @@ table(dat$Treatment)
 mean(dat$Year[dat$Treatment == "VAN"])
 mean(dat$Year[dat$Treatment == "LIN"])
 #distributions of these are about the same
-
-#get rid of all non-LIN/VAN treatments
-dat = dat[dat$Treatment == "VAN" | dat$Treatment == "LIN",]
-remove = NULL
-for(i in 1:nrow(dat)){
-  if(dat$Study[i] %in% dat$Study[-i]){
-    
-  } else{
-    remove = c(remove,i)
-  }
-}
-dat = dat[-remove,]
+# 
+# #get rid of all non-LIN/VAN treatments
+# dat = dat[dat$Treatment == "VAN" | dat$Treatment == "LIN",]
+# remove = NULL
+# for(i in 1:nrow(dat)){
+#   if(dat$Study[i] %in% dat$Study[-i]){
+#     
+#   } else{
+#     remove = c(remove,i)
+#   }
+# }
+# dat = dat[-remove,]
 
 
 ########
@@ -287,6 +287,7 @@ plot_k = NULL
 
 # for(k in c(2,8,9,10,15)){
 for(k in c(2)){
+  
   obs_x = years_kt[[k]]
   y = d_kt_list[[k]]
   pred_x = 0:(10*T)/10
