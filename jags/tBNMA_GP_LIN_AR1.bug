@@ -42,10 +42,12 @@ model {
       Mean[t,k] = d[k]
       
       Sigma[t,t,k] = pow(psi,2) + pow(phi[k],2) + pow(sb[k],2) + pow(sl[k],2)*short_year_ki[k,t]*short_year_ki[k,t]
+      
       for(j in (t+1):tsize[k]){
-        Sigma[t,j,k] = pow(phi[k],2)*exp(-rho[k]*abs(short_year_ki[k,t] - short_year_ki[k,j]) )
+        Sigma[t,j,k] = pow(phi[k],2)*exp(-rho[k]*abs(short_year_ki[k,t] - short_year_ki[k,j]) )+ pow(sb[k],2) + pow(sl[k],2)*short_year_ki[k,t]*short_year_ki[k,j]
         Sigma[j,t,k] = Sigma[t,j,k]
       }
+      
     }
     
   }
@@ -59,7 +61,7 @@ model {
     phi[k] ~ dunif(0, 5)
     rho[k] ~ dunif(0.001, 1)
     sb[k] ~ dunif(0,5)
-    sl[k] ~ dunif(0,5)
+    sl[k] ~ dunif(0,0.1)
   }
   
   
@@ -78,14 +80,14 @@ model {
   z_k[5] = 0
   z_k[6]= 0
   z_k[7] = 0
-  z_k[8] = 1
-  z_k[9] = 1
-  z_k[10] = 1
+  z_k[8] = 0
+  z_k[9] = 0
+  z_k[10] = 0
   z_k[11] = 0
   z_k[12] = 0
   z_k[13] = 0
   z_k[14] = 0
-  z_k[15] = 1
+  z_k[15] = 0
   z_k[16] = 0
   z_k[17] = 0
   z_k[18] = 0
