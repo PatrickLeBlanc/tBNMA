@@ -41,7 +41,7 @@ model {
     for(t in 1:tsize[k]){
       Mean[t,k] = d[k]
       
-      Sigma[t,t,k] = pow(psi,2) + pow(phi[k],2) + pow(sb[k],2) + pow(sl[k],2)*short_year_ki[k,t]*short_year_ki[k,t]
+      Sigma[t,t,k] = 0.01 + pow(psi,2) + pow(phi[k],2) + pow(sb[k],2) + pow(sl[k],2)*short_year_ki[k,t]*short_year_ki[k,t]
       
       for(j in (t+1):tsize[k]){
         Sigma[t,j,k] = pow(phi[k],2)*exp(-rho[k]*abs(short_year_ki[k,t] - short_year_ki[k,j]) )+ pow(sb[k],2) + pow(sl[k],2)*short_year_ki[k,t]*short_year_ki[k,j]
@@ -60,6 +60,8 @@ model {
   for(k in 2:K){
     phi[k] ~ dunif(0, 5)
     rho[k] ~ dunif(0.001, 1)
+    #sb[k] = 0
+    #sl[k] = 0
     sb[k] ~ dunif(0,5)
     sl[k] ~ dunif(0,0.1)
   }

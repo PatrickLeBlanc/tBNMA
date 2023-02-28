@@ -3,59 +3,33 @@ library(ggplot2)
 library(R2jags)
 library(scales)
 library(gridExtra)
+library(tseries)
 
-dat = read.csv("Data/data_tbnma.csv")
+dat = read.csv("Data/data_date_tbnma.csv")
 
-# #lets get cheeky?
-# dat = dat[dat$Year < 2010,]
-
-#######
-# EDA #
-#######
-
-table(dat$Treatment)
-#68 datapoints for 15 treatments
-#mostly VAN and LIN
-#some evidence that VAN is vecoming less effective oer time?
-#so question of interest is really owh do VAN and LIN compare
-
-mean(dat$Year[dat$Treatment == "VAN"])
-mean(dat$Year[dat$Treatment == "LIN"])
-#distributions of these are about the same
-
-#get rid of all non-LIN/VAN treatments
-dat = dat[dat$Treatment == "VAN" | dat$Treatment == "LIN",]
-remove = NULL
-for(i in 1:nrow(dat)){
-  if(dat$Study[i] %in% dat$Study[-i]){
-
-  } else{
-    remove = c(remove,i)
-  }
-}
-dat = dat[-remove,]
-
-# #get rid of all data from some year
-# dat = dat[!dat$Year == 2005,]
-dat[dat$Year == 2005,]
-# dat = dat[-c(86,87),]
-
-
-########
-# make data structures
 
 #find number of studies/treatments
 uniq_studies = unique(dat$Study)
 I = length(uniq_studies)
 K = length(table(dat$Treatment))
 
-#find years in which the studies took place
+#find dates in which the studies took place
 #normalize so that the first year is 0
+days = NULL
 years = NULL
 for(i in 1:length(uniq_studies)){
   temp_dat = dat[dat$Study == uniq_studies[i],]
-  years = c(years,temp_dat$Year[1])
+  temp = temp_dat$Date[1]
+  days = c(days,strftime(as.POSIXct(temp), format = "%j"))
+  years = c(years,strftime(as.POSIXct(temp), format = "%Y"))
 }
+days = as.numeric(days)
+years = as.numeric(years)
+dates = years + days/365 #normalize assuming 365 days/year - close enough?
+
+#reconfigure names to match up with old syntax
+years = dates
+
 first_year = min(years)
 years = years - first_year
 T = max(years)
@@ -293,6 +267,15 @@ plot_k = NULL
 # for(k in c(2,8,9,10,15)){
 for(k in c(2)){
   
+  # obs_x = years_kt[[k]]
+  # pred_x = obs_x
+  # d_kt_mat = jags_fit_time$BUGSoutput$sims.list$d_kt[,k,]
+  # 
+  # pred_mu = apply(d_kt_mat,2,mean)
+  # quant_mat = apply(d_kt_mat,2,find_quant)
+  # pred_low = quant_mat[1,]
+  # pred_high = quant_mat[2,]
+  
   #find
   obs_x = years_kt[[k]]
   pred_x = 0:(10*T)/10
@@ -310,13 +293,13 @@ for(k in c(2)){
   sl_vec = jags_fit_time$BUGSoutput$sims.list$sl[,k]
   d_vec =  jags_fit_time$BUGSoutput$sims.list$d[,k]
   d_kt_mat = jags_fit_time$BUGSoutput$sims.list$d_kt[,k,]
-  
+
 
   out_ntk = array(0,dim = c(length(psi_vec),length(pred_x),K))
-  for(n in 1:nrow(d_mat)){
+  for(n in 1:nrow(d_kt_mat)){
     #find y
     y = d_kt_mat[n,1:tsize[k]]
-    
+
     #find mean
     mu1 = rep(d_vec[n],length(pred_x))
     mu2 = rep(d_vec[n],length(obs_x))
@@ -352,7 +335,7 @@ for(k in c(2)){
       print(n)
     }
   }
-  
+
   pred_mu = apply(out_ntk[,,k],2,mean)
   quant_mat = apply(out_ntk[,,k],2,find_quant)
   pred_low = quant_mat[1,]
@@ -381,7 +364,7 @@ p1 = ggplot(data = df, aes(x = Years, y = Mean)) +
   geom_ribbon(aes(ymin = Low, ymax = High),
               alpha = 0.2, fill = "deepskyblue4") +
   ggtitle("Posterior Mean Credible Intervals")  +
-  scale_y_continuous(limits = c(-1.2, 0.75))
+  scale_y_continuous(limits = c(-1.2, 1))
 
 
 for(k in unique(df$K)){
@@ -461,8 +444,8 @@ p2 = ggplot(data = df, aes(x = Years, y = Mean)) +
   geom_line() +
   geom_ribbon(aes(ymin = Low, ymax = High),
               alpha = 0.2, fill = "deepskyblue4") + 
-  ggtitle("Postior Mean Uncertainty")  +
-  scale_y_continuous(limits = c(-1.2, 0.75))
+  ggtitle("Postior Predictive Distribution")  +
+  scale_y_continuous(limits = c(-1.2, 1))
 
 for(k in unique(df$K)){
   print(k)
@@ -470,3 +453,11 @@ for(k in unique(df$K)){
 }
 
 grid.arrange(p1,p2,ncol = 2)
+
+
+#Test if time-series is stationary?
+#Dickey-Fuller test
+
+plot(short_year_ki[2,]+1:tsize[2]*0.01,jags_fit_time$BUGSoutput$mean$d_kt[2,])
+adf.test(jags_fit_time$BUGSoutput$mean$d_kt[2,short_year_ki[2,]])
+adf.test(df$Mean)
