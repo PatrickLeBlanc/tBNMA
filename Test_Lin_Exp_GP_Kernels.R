@@ -7,6 +7,8 @@ library(tseries)
 
 dat = read.csv("Data/data_date_tbnma.csv")
 
+#restrict dat to just Zhang datasets
+dat = dat[dat$Source == "Zhang",]
 
 #find number of studies/treatments
 uniq_studies = unique(dat$Study)
@@ -263,6 +265,10 @@ plot_pred_mu = NULL
 plot_pred_low = NULL
 plot_pred_high = NULL
 plot_k = NULL
+
+find_quant = function(x){
+  return(quantile(x,c(0.025,0.975)))
+}
 
 # for(k in c(2,8,9,10,15)){
 for(k in c(2)){
