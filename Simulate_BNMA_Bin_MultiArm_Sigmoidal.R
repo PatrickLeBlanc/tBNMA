@@ -566,10 +566,17 @@ prec_mu = 1
 #JAGS Now
 
 mu = mu_i
+# #save data for jags
+# jags_data <- list("I", "n_ik","y_ik",
+#                   "num_treat","t_mat",
+#                   "m_mu","prec_mu",
+#                   "K",
+#                   "short_year_ki",
+#                   "tsize","TS",
+#                   "lts_ind")
 #save data for jags
 jags_data <- list("I", "n_ik","y_ik",
                   "num_treat","t_mat",
-                  "m_mu","prec_mu",
                   "K",
                   "short_year_ki",
                   "tsize","TS",
