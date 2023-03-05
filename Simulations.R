@@ -1350,10 +1350,14 @@ df = data.frame("Years" = plot_years,
                 "Truth" = plot_truth)
 
 ggplot(data = df, aes(x = Years, y = Effect, group = Model, color = Model)) +
-  geom_line() +
-  facet_grid(Model ~ Truth,
+  geom_line(linewidth = 2) +
+  facet_grid(Truth ~ Model,
              ) +
-  theme(strip.placement = "outside") + 
   geom_ribbon(aes(ymin = Low, ymax = High),
               alpha = 0.2, fill = "deepskyblue4") +
-  ggtitle("Credible Intervals")
+  ggtitle("Credible Intervals") + 
+  theme(plot.title = element_text(size = 40, face = "bold"),
+        strip.text.x = element_text(size = 20),
+        strip.text.y = element_blank(),
+        legend.position = "none"
+        )
