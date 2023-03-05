@@ -81,7 +81,7 @@ model {
   
   d[1] <- 0                                           
   for(k in 2:K){                                      
-    d[k] ~ dnorm(0,0.0001)                            
+    d[k] ~ dnorm(m_d,prec_d)                            
   }
   
   #sd ~ dunif(0,5)
@@ -93,6 +93,9 @@ model {
   sd_mu ~ dgamma(1,1)
   prec_mu = pow(sd_mu,-1)
   
+  m_d ~ dnorm(0,0.0001)
+  sd_d ~ dgamma(1,1)
+  prec_d = pow(sd_d,-1)
 
   z_k[1] = 0
   z_k[2] = 1
