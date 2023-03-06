@@ -1361,3 +1361,213 @@ ggplot(data = df, aes(x = Years, y = Effect, group = Model, color = Model)) +
         strip.text.y = element_blank(),
         legend.position = "none"
         )
+
+#####
+# Mean and CI
+
+model = NULL
+treatment = NULL
+post_mean = NULL
+up_bound = NULL
+low_bound = NULL
+
+##########
+# Recover BNMA estimates
+
+for(k in 1:K){
+  #recover values
+  d_vec = jags_fit$BUGSoutput$sims.list$d[,k]
+  pred_mu = mean(d_vec)
+  quant_mat = find_quant(d_vec)
+  pred_low = quant_mat[1]
+  pred_high = quant_mat[2]
+  
+  #put into data structures
+  model = c(model,"BNMA")
+  treament = c(treatment, treatment_map$Treatment[k])
+  post_mean =c(post_mean,pred_mu)
+  up_bound = c(up_bound,pred_high)
+  low_bound = c(low_bound,pred_low)
+}
+
+##########
+# Recover Meta-BNMA estimates
+
+for(k in 1:K){
+  
+  obs_x = years_kt[[k]]
+  pred_x = 20
+  
+  d_vec = jags_fit_meta$BUGSoutput$sims.list$d[,k]
+  
+  #find credible intervals for d_kt
+  if(k == 2){
+    b_vec = jags_fit_meta$BUGSoutput$sims.list$b[,k]
+  } else {
+    b_vec = rep(0,length(d_vec))
+  }
+  
+  pred_vec = d_vec + b_vec*pred_x
+  
+  pred_mu = mean(pred_vec)
+  
+  quant_mat = find_quant(pred_vec)
+  pred_low = quant_mat[1]
+  pred_high = quant_mat[2]
+  
+  #put into data structures
+  model = c(model,"Meta-BNMA")
+  treament = c(treatment, treatment_map$Treatment[k])
+  post_mean =c(post_mean,pred_mu)
+  up_bound = c(up_bound,pred_high)
+  low_bound = c(low_bound,pred_low)
+}
+
+##########
+# Recover tBNMA estimates
+
+for(k in 1:K){
+  
+  obs_x = years_kt[[k]]
+  pred_x = max(years)
+  
+  #find credible intervals for d_kt
+  if(k == 2){
+    one_ind = 1:length(pred_x)
+    two_ind = (length(pred_x)+1):(length(pred_x) + length(obs_x))
+    
+    tot_years = c(pred_x,obs_x)
+    
+    phi_vec = jags_fit_time$BUGSoutput$sims.list$phi[,k]
+    rho_vec = jags_fit_time$BUGSoutput$sims.list$rho[,k]
+    psi_vec = jags_fit_time$BUGSoutput$sims.list$psi
+    sb_vec = jags_fit_time$BUGSoutput$sims.list$sb[,k]
+    sl_vec = jags_fit_time$BUGSoutput$sims.list$sl[,k]
+    d_vec =  jags_fit_time$BUGSoutput$sims.list$d[,k]
+    d_kt_mat = jags_fit_time$BUGSoutput$sims.list$d_kt[,k,]
+    
+    
+    out_ntk = array(0,dim = c(length(psi_vec),length(pred_x),K))
+    for(n in 1:nrow(d_kt_mat)){
+      #find y
+      y = d_kt_mat[n,1:tsize[k]]
+      
+      #find mean
+      mu1 = rep(d_vec[n],length(pred_x))
+      mu2 = rep(d_vec[n],length(obs_x))
+      
+      #find covariance
+      Sigma = matrix(0,nrow = length(tot_years),ncol = length(tot_years))
+      for(i in 1:nrow(Sigma)){
+        
+        if(i <= length(pred_x)){
+          Sigma[i,i] = phi_vec[n]^2 + sb_vec[n]^2 + sl_vec[n]^2*tot_years[i]*tot_years[i]
+        } else {
+          Sigma[i,i] = psi_vec[n]^2 + phi_vec[n]^2 + sb_vec[n]^2 + sl_vec[n]^2*tot_years[i]*tot_years[i]
+        }
+        
+        if(i < nrow(Sigma)){
+          for(j in (i+1):ncol(Sigma)){
+            Sigma[i,j] = phi_vec[n]^2*exp(-rho_vec[n]*abs(tot_years[i] - tot_years[j])) + sb_vec[n]^2 + sl_vec[n]^2*tot_years[i]*tot_years[j]
+            Sigma[j,i] = Sigma[i,j]
+          }
+        }
+        
+      }
+      
+      Sigma11 = Sigma[one_ind,one_ind]
+      Sigma12 = Sigma[one_ind,two_ind]
+      Sigma22 = Sigma[two_ind,two_ind]
+      Sigma22_inv = solve(Sigma22)
+      Sigma21 = Sigma[two_ind,one_ind]
+      
+      # out_ntk[n,,k] = mu1 + Sigma12 %*% Sigma22_inv %*%(y - mu2)
+      
+      cond_mu = mu1 + Sigma12 %*% Sigma22_inv %*%(y - mu2)
+      cond_Sigma = max(0.001,Sigma11 - Sigma12 %*% (Sigma22_inv)%*% Sigma21) #numeric instability
+      
+      # # A = chol(cond_Sigma)
+      # A = svd(cond_Sigma)
+      # A1 = A$u %*% diag(sqrt(A$d))
+      
+      out_ntk[n,,k] = sqrt(as.numeric(cond_Sigma)) %*% rnorm(length(pred_x)) + cond_mu
+      
+      # if(n %% 500 ==0){
+      #   print(n)
+      # }
+    }
+    
+    pred_mu = mean(out_ntk[,,k])
+    quant_mat = find_quant(out_ntk[,,2])
+    pred_low = quant_mat[1]
+    pred_high = quant_mat[2]
+    
+    
+  } else {
+    #recover values
+    d_vec = jags_fit_time$BUGSoutput$sims.list$d[,k]
+    pred_mu = mean(d_vec)
+    quant_mat = find_quant(d_vec)
+    pred_low = quant_mat[1]
+    pred_high = quant_mat[2]
+  }
+  
+  #put into data structures
+  model = c(model,"tBNMA")
+  treament = c(treatment, treatment_map$Treatment[k])
+  post_mean =c(post_mean,pred_mu)
+  up_bound = c(up_bound,pred_high)
+  low_bound = c(low_bound,pred_low)
+}
+
+#find true values
+#for k = 2
+for(k in 1:K){
+  
+  if(k == 2){
+    #find value
+    height = 3
+    scale = 1
+    center = T/2
+    pred_x = max(years)
+    #record
+    pred_mu = d[k] - height +  2*height/(1+exp(-scale*(pred_x - center)))
+    pred_low = pred_mu
+    pred_high = pred_mu
+    
+  } else {
+    #recover values
+    pred_mu = d[k]
+    pred_low = pred_mu
+    pred_high = pred_mu
+  }
+  
+  #put into data structures
+  model = c(model,"Truth")
+  treament = c(treatment, treatment_map$Treatment[k])
+  post_mean =c(post_mean,pred_mu)
+  up_bound = c(up_bound,pred_high)
+  low_bound = c(low_bound,pred_low)
+}
+
+df = data.frame(Mean = post_mean,
+                Low = low_bound,
+                Up = up_bound,
+                Treatment = as.factor(treatment_map$Treatment),
+                Model = as.factor(model)
+                )
+
+ggplot(df) +
+  geom_errorbar(aes(x = Model, y = Mean, ymin=Low, ymax=Up, color = Model),
+                position = position_dodge(0.75),
+                size = 1.5) +
+  geom_point( aes(x = Model, y = Mean, color = Model),
+              position = position_dodge(0.75),
+              size = 3, shape = 21, fill = "white") +
+  facet_wrap(~Treatment) +
+  coord_flip() +
+  xlab("Model") +
+  ylab("Treatment Effect") +
+  theme(axis.text=element_text(size=14),
+        axis.title=element_text(size=16,face="bold"),
+        legend.position = "none")

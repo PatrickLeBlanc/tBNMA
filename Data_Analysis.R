@@ -204,13 +204,9 @@ for(i in 1:I){
 # BNMA #
 ########
 
-m_mu = 0
-prec_mu = 1
-
 #save data for jags
 jags_data <- list("I","n_ik","y_ik",
                   "num_treat", "t_mat",
-                  "m_mu","prec_mu",
                   "K")
 
 #note which params to save
